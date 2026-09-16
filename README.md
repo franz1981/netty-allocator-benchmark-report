@@ -1,5 +1,5 @@
 ## 🚀 Benchmark
 
-* This is the latest benchmark results of [ByteBufAllocatorAllocPatternBenchmark](https://github.com/neoionet/netty-allocator/blob/1.1/benchmark/src/main/java/io/github/neoionet/netty/microbenchmark/ByteBufAllocatorAllocPatternBenchmark.java):
-  * **[Chart](https://neoionet.github.io/netty-allocator-benchmark-report/latest/benchmark.html)**
-  * **[Specification](https://neoionet.github.io/netty-allocator-benchmark-report/latest/specification)**
+* This is the latest benchmark results:
+  * **[Chart](https://neoionet.github.io/netty-allocator-benchmark-report/1.2.0/benchmark.html)**
+  * **[Specification](https://neoionet.github.io/netty-allocator-benchmark-report/1.2.0/specification)**
