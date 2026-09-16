@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Netty Allocators Benchmark</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  display: flex;
+  height: 100vh;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #e2e8f0;
+}
+
+nav {
+  width: 200px;
+  flex-shrink: 0;
+  border-right: 1px solid #252830;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 12px;
+  gap: 4px;
+}
+
+.logo {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #16191f;
+  padding: 0 4px 16px;
+  border-bottom: 1px solid #252830;
+  margin-bottom: 8px;
+}
+
+.logo span {
+  display: block;
+  font-size: 12px;
+  font-weight: 450;
+  letter-spacing: 0.05em;
+  color: #475569;
+  margin-top: 16px;
+}
+
+.nav-btn {
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  padding: 9px 12px;
+  text-align: left;
+  font-size: 16px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  line-height: 1.4;
+}
+
+.nav-btn:hover {
+  background: #1e2230;
+  color: #cbd5e1;
+}
+
+.nav-btn.active {
+  background: #1e2a40;
+  color: #ffffff;
+}
+
+.nav-btn::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  margin-right: 8px;
+  opacity: 0.6;
+  vertical-align: middle;
+  position: relative;
+  top: -1px;
+}
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: #ffffff;
+}
+
+iframe {
+  width: 100%;
+  flex: 1;
+  border: none;
+}
+
+#loading {
+  position: fixed;
+  inset: 0;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(3px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  gap: 14px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.spinner {
+  width: 42px;
+  height: 42px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin .75s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div id="loading">
+  <div class="spinner"></div>
+  <span>loading…</span>
+</div>
+<nav>
+  <div class="logo">Allocator Bench<span>32 threads · 16 cores</span></div>
+
+  <!-- <button class="nav-btn" onclick="show(this,2)">Eventloop on x86</button> -->
+  <button class="nav-btn active" onclick="show(this,0)">Eventloop on ARM</button>
+  <!-- <button class="nav-btn" onclick="show(this,3)">Platform on x86</button> -->
+  <button class="nav-btn" onclick="show(this,1)">Platform on ARM</button>
+</nav>
+
+<main>
+  <iframe id="f0" data-srcdoc='<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;padding:0 12px;font-family:system-ui,sans-serif}</style></head><body>
+<style>
+.ctrl-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1rem;align-items:flex-end}
+
+.pg{display:flex;border:0.5px solid var(--color-border-secondary, #d1d5db);border-radius:20px;overflow:hidden}
+.pill{padding:5px 14px;font-size:13px;cursor:pointer;background:transparent;border:none;color:var(--color-text-secondary, #4b5563)}
+
+.pill.on{background:var(--color-text-primary, #111827);color:var(--color-background-primary, #ffffff)}
+.slabel{font-size:11px;font-weight:500;color:var(--color-text-tertiary, #6b7280);text-transform:uppercase;margin-bottom:5px}
+.chart-title{font-size:13px;font-weight:500;color:var(--color-text-secondary, #4b5563);margin:1rem 0 4px}
+.cw{position:relative;width:100%;height:260px}
+.leg{display:flex;gap:16px;font-size:12px;color:var(--color-text-secondary, #4b5563);margin-bottom:.5rem}
+.leg span{display:flex;align-items:center;gap:5px}
+.lsq{display:inline-block;width:20px;height:3px;border-radius:2px}
+.warn{background:var(--color-background-warning, #fef08a);border:0.5px solid var(--color-border-warning, #facc15);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--color-text-warning, #854d0e);margin-bottom:1rem;display:none}
+</style>
+
+<div style="padding:18px 0 0">
+<h4 class="sr-only">32 event loop threads on ARM with 16 cores</h4>
+<hr>
+<div class="ctrl-row">
+  <div><div class="slabel">allocation</div>
+    <div class="pg" id="gm">
+      <button class="pill on" data-v="direct">direct</button>
+      <button class="pill" data-v="heap">heap</button>
+    </div></div>
+  <div><div class="slabel">pattern</div>
+    <div class="pg" id="gp">
+      <button class="pill on" data-v="SOCKET_PROXY">SOCKET_PROXY</button>
+      <button class="pill" data-v="API_GATEWAY">API_GATEWAY</button>
+    </div></div>
+  <div><div class="slabel">read/write</div>
+    <div class="pg" id="gr">
+      <button class="pill on" data-v="true">on</button>
+      <button class="pill" data-v="false">off</button>
+    </div></div>
+</div>
+
+<div class="leg">
+  <span><span class="lsq" style="background:#4a7fcb"></span>POOLED</span>
+  <span><span class="lsq" style="background:#2aaa6e"></span>ADAPTIVE</span>
+  <span><span class="lsq" style="background:#d05a2a"></span>MIMALLOC</span>
+</div>
+
+<div class="chart-title">Latency (ns/op)&nbsp;&nbsp;<span style="font-weight:400;color:var(--color-text-tertiary)">the lower the better</span></div>
+<div class="cw"><canvas id="cL" role="img" aria-label="Allocation latency line chart"></canvas></div>
+
+<div class="chart-title">RSS (MiB)</div>
+<div class="cw"><canvas id="cR" role="img" aria-label="RSS memory line chart"></canvas></div>
+
+<div class="chart-title">allocator used direct/heap memory (MiB)</div>
+<div class="cw"><canvas id="cNew" role="img" aria-label="UsedMemory chart"></canvas></div>
+
+</div>
+
+<script>
+const D=[["direct",128,"POOLED","false","SOCKET_PROXY",336,433,128],["direct",128,"POOLED","false","API_GATEWAY",341,824,128],["direct",128,"POOLED","true","SOCKET_PROXY",235,439,128],["direct",128,"POOLED","true","API_GATEWAY",243,912,128],["direct",128,"ADAPTIVE","false","SOCKET_PROXY",70,334,101],["direct",128,"ADAPTIVE","false","API_GATEWAY",73,646,129],["direct",128,"ADAPTIVE","true","SOCKET_PROXY",76,336,101],["direct",128,"ADAPTIVE","true","API_GATEWAY",88,575,129],["direct",128,"MIMALLOC","false","SOCKET_PROXY",74,357,128],["direct",128,"MIMALLOC","false","API_GATEWAY",87,673,364],["direct",128,"MIMALLOC","true","SOCKET_PROXY",114,359,128],["direct",128,"MIMALLOC","true","API_GATEWAY",148,655,320],["direct",1024,"POOLED","false","SOCKET_PROXY",233,690,256],["direct",1024,"POOLED","false","API_GATEWAY",225,1589,256],["direct",1024,"POOLED","true","SOCKET_PROXY",322,664,256],["direct",1024,"POOLED","true","API_GATEWAY",471,1115,256],["direct",1024,"ADAPTIVE","false","SOCKET_PROXY",72,419,183],["direct",1024,"ADAPTIVE","false","API_GATEWAY",102,1075,261],["direct",1024,"ADAPTIVE","true","SOCKET_PROXY",81,418,183],["direct",1024,"ADAPTIVE","true","API_GATEWAY",153,845,259],["direct",1024,"MIMALLOC","false","SOCKET_PROXY",83,506,256],["direct",1024,"MIMALLOC","false","API_GATEWAY",104,622,384],["direct",1024,"MIMALLOC","true","SOCKET_PROXY",91,483,256],["direct",1024,"MIMALLOC","true","API_GATEWAY",117,622,384],["direct",4096,"POOLED","false","SOCKET_PROXY",459,1014,512],["direct",4096,"POOLED","false","API_GATEWAY",493,1773,768],["direct",4096,"POOLED","true","SOCKET_PROXY",441,1014,512],["direct",4096,"POOLED","true","API_GATEWAY",494,1769,768],["direct",4096,"ADAPTIVE","false","SOCKET_PROXY",84,1081,421],["direct",4096,"ADAPTIVE","false","API_GATEWAY",160,2228,674],["direct",4096,"ADAPTIVE","true","SOCKET_PROXY",105,997,414],["direct",4096,"ADAPTIVE","true","API_GATEWAY",186,2237,675],["direct",4096,"MIMALLOC","false","SOCKET_PROXY",89,894,640],["direct",4096,"MIMALLOC","false","API_GATEWAY",97,1014,768],["direct",4096,"MIMALLOC","true","SOCKET_PROXY",91,881,640],["direct",4096,"MIMALLOC","true","API_GATEWAY",154,1013,768],["direct",8192,"POOLED","false","SOCKET_PROXY",396,1535,896],["direct",8192,"POOLED","false","API_GATEWAY",435,2632,1408],["direct",8192,"POOLED","true","SOCKET_PROXY",402,1542,896],["direct",8192,"POOLED","true","API_GATEWAY",749,2322,1408],["direct",8192,"ADAPTIVE","false","SOCKET_PROXY",82,1364,746],["direct",8192,"ADAPTIVE","false","API_GATEWAY",252,2880,1212],["direct",8192,"ADAPTIVE","true","SOCKET_PROXY",130,1261,742],["direct",8192,"ADAPTIVE","true","API_GATEWAY",332,2811,1199],["direct",8192,"MIMALLOC","false","SOCKET_PROXY",96,1290,1024],["direct",8192,"MIMALLOC","false","API_GATEWAY",120,1521,1280],["direct",8192,"MIMALLOC","true","SOCKET_PROXY",139,1280,1024],["direct",8192,"MIMALLOC","true","API_GATEWAY",134,1532,1280],["direct",16384,"POOLED","false","SOCKET_PROXY",602,2592,1792],["direct",16384,"POOLED","false","API_GATEWAY",394,3884,2432],["direct",16384,"POOLED","true","SOCKET_PROXY",655,2566,1792],["direct",16384,"POOLED","true","API_GATEWAY",836,3495,2432],["direct",16384,"ADAPTIVE","false","SOCKET_PROXY",99,2093,1401],["direct",16384,"ADAPTIVE","false","API_GATEWAY",634,3906,2332],["direct",16384,"ADAPTIVE","true","SOCKET_PROXY",202,1916,1388],["direct",16384,"ADAPTIVE","true","API_GATEWAY",780,3828,2334],["direct",16384,"MIMALLOC","false","SOCKET_PROXY",136,2114,1792],["direct",16384,"MIMALLOC","false","API_GATEWAY",239,2607,2304],["direct",16384,"MIMALLOC","true","SOCKET_PROXY",162,2096,1792],["direct",16384,"MIMALLOC","true","API_GATEWAY",240,2603,2304],["direct",32768,"POOLED","false","SOCKET_PROXY",502,4786,3324],["direct",32768,"POOLED","false","API_GATEWAY",742,6131,4608],["direct",32768,"POOLED","true","SOCKET_PROXY",722,4553,3328],["direct",32768,"POOLED","true","API_GATEWAY",1050,6123,4608],["direct",32768,"ADAPTIVE","false","SOCKET_PROXY",124,3272,2715],["direct",32768,"ADAPTIVE","false","API_GATEWAY",816,6138,4573],["direct",32768,"ADAPTIVE","true","SOCKET_PROXY",278,3209,2718],["direct",32768,"ADAPTIVE","true","API_GATEWAY",1029,6156,4574],["direct",32768,"MIMALLOC","false","SOCKET_PROXY",199,3650,3328],["direct",32768,"MIMALLOC","false","API_GATEWAY",262,4530,4224],["direct",32768,"MIMALLOC","true","SOCKET_PROXY",206,3654,3328],["direct",32768,"MIMALLOC","true","API_GATEWAY",253,4530,4224],["direct",65536,"POOLED","false","SOCKET_PROXY",727,7980,6272],["direct",65536,"POOLED","false","API_GATEWAY",695,10873,8960],["direct",65536,"POOLED","true","SOCKET_PROXY",1014,7963,6272],["direct",65536,"POOLED","true","API_GATEWAY",1107,10650,8960],["direct",65536,"ADAPTIVE","false","SOCKET_PROXY",185,5924,5314],["direct",65536,"ADAPTIVE","false","API_GATEWAY",1167,10765,9053],["direct",65536,"ADAPTIVE","true","SOCKET_PROXY",339,5856,5314],["direct",65536,"ADAPTIVE","true","API_GATEWAY",1475,10744,9056],["direct",65536,"MIMALLOC","false","SOCKET_PROXY",225,6836,6400],["direct",65536,"MIMALLOC","false","API_GATEWAY",271,8256,7808],["direct",65536,"MIMALLOC","true","SOCKET_PROXY",263,6833,6400],["direct",65536,"MIMALLOC","true","API_GATEWAY",273,8245,7808],["heap",128,"POOLED","false","SOCKET_PROXY",208,436,128],["heap",128,"POOLED","false","API_GATEWAY",215,958,128],["heap",128,"POOLED","true","SOCKET_PROXY",216,433,128],["heap",128,"POOLED","true","API_GATEWAY",225,956,128],["heap",128,"ADAPTIVE","false","SOCKET_PROXY",94,304,105],["heap",128,"ADAPTIVE","false","API_GATEWAY",74,676,127],["heap",128,"ADAPTIVE","true","SOCKET_PROXY",71,305,101],["heap",128,"ADAPTIVE","true","API_GATEWAY",81,600,131],["heap",128,"MIMALLOC","false","SOCKET_PROXY",75,367,128],["heap",128,"MIMALLOC","false","API_GATEWAY",133,2630,340],["heap",128,"MIMALLOC","true","SOCKET_PROXY",82,358,128],["heap",128,"MIMALLOC","true","API_GATEWAY",131,2570,340],["heap",1024,"POOLED","false","SOCKET_PROXY",231,717,256],["heap",1024,"POOLED","false","API_GATEWAY",317,1713,256],["heap",1024,"POOLED","true","SOCKET_PROXY",415,649,256],["heap",1024,"POOLED","true","API_GATEWAY",449,1135,256],["heap",1024,"ADAPTIVE","false","SOCKET_PROXY",80,427,183],["heap",1024,"ADAPTIVE","false","API_GATEWAY",96,900,263],["heap",1024,"ADAPTIVE","true","SOCKET_PROXY",96,423,183],["heap",1024,"ADAPTIVE","true","API_GATEWAY",107,984,261],["heap",1024,"MIMALLOC","false","SOCKET_PROXY",96,504,256],["heap",1024,"MIMALLOC","false","API_GATEWAY",99,674,384],["heap",1024,"MIMALLOC","true","SOCKET_PROXY",101,498,256],["heap",1024,"MIMALLOC","true","API_GATEWAY",125,672,384],["heap",4096,"POOLED","false","SOCKET_PROXY",240,1149,512],["heap",4096,"POOLED","false","API_GATEWAY",334,2417,764],["heap",4096,"POOLED","true","SOCKET_PROXY",374,1079,512],["heap",4096,"POOLED","true","API_GATEWAY",330,2343,764],["heap",4096,"ADAPTIVE","false","SOCKET_PROXY",95,1023,420],["heap",4096,"ADAPTIVE","false","API_GATEWAY",181,2354,674],["heap",4096,"ADAPTIVE","true","SOCKET_PROXY",103,993,424],["heap",4096,"ADAPTIVE","true","API_GATEWAY",204,2331,675],["heap",4096,"MIMALLOC","false","SOCKET_PROXY",83,974,640],["heap",4096,"MIMALLOC","false","API_GATEWAY",100,1118,768],["heap",4096,"MIMALLOC","true","SOCKET_PROXY",106,970,640],["heap",4096,"MIMALLOC","true","API_GATEWAY",109,1132,768],["heap",8192,"POOLED","false","SOCKET_PROXY",502,2365,896],["heap",8192,"POOLED","false","API_GATEWAY",329,3193,1408],["heap",8192,"POOLED","true","SOCKET_PROXY",364,2398,896],["heap",8192,"POOLED","true","API_GATEWAY",473,3259,1408],["heap",8192,"ADAPTIVE","false","SOCKET_PROXY",106,2146,744],["heap",8192,"ADAPTIVE","false","API_GATEWAY",245,2989,1220],["heap",8192,"ADAPTIVE","true","SOCKET_PROXY",137,2129,747],["heap",8192,"ADAPTIVE","true","API_GATEWAY",327,2973,1208],["heap",8192,"MIMALLOC","false","SOCKET_PROXY",162,2315,1024],["heap",8192,"MIMALLOC","false","API_GATEWAY",281,2319,1280],["heap",8192,"MIMALLOC","true","SOCKET_PROXY",181,2283,1024],["heap",8192,"MIMALLOC","true","API_GATEWAY",183,2313,1280],["heap",16384,"POOLED","false","SOCKET_PROXY",355,3452,1792],["heap",16384,"POOLED","false","API_GATEWAY",439,4269,2432],["heap",16384,"POOLED","true","SOCKET_PROXY",508,3386,1792],["heap",16384,"POOLED","true","API_GATEWAY",727,4390,2432],["heap",16384,"ADAPTIVE","false","SOCKET_PROXY",241,2531,1402],["heap",16384,"ADAPTIVE","false","API_GATEWAY",513,4143,2328],["heap",16384,"ADAPTIVE","true","SOCKET_PROXY",248,2479,1396],["heap",16384,"ADAPTIVE","true","API_GATEWAY",822,4144,2329],["heap",16384,"MIMALLOC","false","SOCKET_PROXY",287,3238,1792],["heap",16384,"MIMALLOC","false","API_GATEWAY",414,3240,2304],["heap",16384,"MIMALLOC","true","SOCKET_PROXY",519,3316,1792],["heap",16384,"MIMALLOC","true","API_GATEWAY",331,3308,2304],["heap",32768,"POOLED","false","SOCKET_PROXY",441,5561,3328],["heap",32768,"POOLED","false","API_GATEWAY",549,7460,4608],["heap",32768,"POOLED","true","SOCKET_PROXY",655,5510,3328],["heap",32768,"POOLED","true","API_GATEWAY",866,7313,4608],["heap",32768,"ADAPTIVE","false","SOCKET_PROXY",212,3659,2721],["heap",32768,"ADAPTIVE","false","API_GATEWAY",803,6499,4578],["heap",32768,"ADAPTIVE","true","SOCKET_PROXY",395,3614,2724],["heap",32768,"ADAPTIVE","true","API_GATEWAY",1157,20489,4569],["heap",32768,"MIMALLOC","false","SOCKET_PROXY",559,5225,3328],["heap",32768,"MIMALLOC","false","API_GATEWAY",596,6177,4220],["heap",32768,"MIMALLOC","true","SOCKET_PROXY",458,5232,3328],["heap",32768,"MIMALLOC","true","API_GATEWAY",605,6219,4220],["heap",65536,"POOLED","false","SOCKET_PROXY",697,9774,6272],["heap",65536,"POOLED","false","API_GATEWAY",690,13284,8960],["heap",65536,"POOLED","true","SOCKET_PROXY",799,9746,6272],["heap",65536,"POOLED","true","API_GATEWAY",989,13306,8960],["heap",65536,"ADAPTIVE","false","SOCKET_PROXY",427,6965,5318],["heap",65536,"ADAPTIVE","false","API_GATEWAY",1199,11264,9061],["heap",65536,"ADAPTIVE","true","SOCKET_PROXY",667,7042,5313],["heap",65536,"ADAPTIVE","true","API_GATEWAY",1271,11246,9060],["heap",65536,"MIMALLOC","false","SOCKET_PROXY",713,8140,6400],["heap",65536,"MIMALLOC","false","API_GATEWAY",677,10106,7808],["heap",65536,"MIMALLOC","true","SOCKET_PROXY",587,8178,6400],["heap",65536,"MIMALLOC","true","API_GATEWAY",587,10224,7808]];
+
+const BUFS=[128,1024,4096,8192,16384,32768,65536];
+const AL=["POOLED","ADAPTIVE","MIMALLOC"];
+const CLR={"POOLED":"#4a7fcb","ADAPTIVE":"#2aaa6e","MIMALLOC":"#d05a2a"};
+let st={method:"direct",pattern:"SOCKET_PROXY",rw:"true"};
+let cL,cR,cNew;
+
+function rows(){return D.filter(r=>r[0]===st.method&&r[3]===st.rw&&r[4]===st.pattern);}
+function ds(col){
+  return AL.map(a=>{
+    const sub=rows().filter(r=>r[2]===a);
+    return{label:a,data:BUFS.map(b=>{const r=sub.find(x=>x[1]===b);return r?r[col]:null;}),
+      borderColor:CLR[a],backgroundColor:CLR[a]+"22",borderWidth:2,
+    };
+  });
+}
+function opts(ytitle){
+  return{responsive:true,maintainAspectRatio:false,animation:{duration:300},
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y!=null?Math.round(c.parsed.y):"n/a"}`}}},
+    scales:{x:{grid:{color:"rgba(128,128,128,.12)"},ticks:{font:{size:11}},title:{display:true,text:"Live buffers",font:{size:11}}},
+            y:{grid:{color:"rgba(128,128,128,.12)"},ticks:{font:{size:11}},title:{display:true,text:ytitle,font:{size:11}}}}};
+}
+function draw(){
+  const lData={labels:BUFS.map(String),datasets:ds(5)};
+  const rData={labels:BUFS.map(String),datasets:ds(6)};
+  const nData={labels:BUFS.map(String),datasets:ds(7)};
+  if(cL){cL.data=lData;cL.update();}
+  if(cR){cR.data=rData;cR.update();}
+  if(cNew){cNew.data=nData;cNew.update();} 
+}
+
+document.querySelectorAll(".pg").forEach(g=>{
+  g.addEventListener("click",e=>{
+    const b=e.target.closest(".pill");if(!b)return;
+    g.querySelectorAll(".pill").forEach(p=>p.classList.remove("on"));
+    b.classList.add("on");
+    const id=g.id;
+    if(id==="gm")st.method=b.dataset.v;
+    if(id==="gp")st.pattern=b.dataset.v;
+    if(id==="gr")st.rw=b.dataset.v;
+    draw();
+  });
+});
+
+function loadChartJS(cb){
+  const CDNS=[
+    "https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"
+  ];
+  let done=false;
+  CDNS.forEach(url=>{
+    const s=document.createElement("script");
+    s.src=url;
+    s.onload=()=>{ if(!done){ done=true; cb(); } };
+    document.head.appendChild(s);
+  });
+}
+
+loadChartJS(function(){
+  cL=new Chart(document.getElementById("cL"),{type:"line",data:{labels:BUFS.map(String),datasets:ds(5)},options:opts("ns/op")});
+  cR=new Chart(document.getElementById("cR"),{type:"line",data:{labels:BUFS.map(String),datasets:ds(6)},options:opts("MiB")});
+  cNew = new Chart(document.getElementById("cNew"), {
+      type: "line",
+      data: { labels: BUFS.map(String), datasets: ds(7) },
+      options: opts("MiB")
+    });
+
+  if (window.parent) parent.postMessage("charts-ready", "*");
+});
+</script>
+</body></html>' style="display:none" frameborder="0"></iframe>
+  <iframe id="f1" data-srcdoc='<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;padding:0 12px;font-family:system-ui,sans-serif}</style></head><body>
+<style>
+.ctrl-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1rem;align-items:flex-end}
+
+.pg{display:flex;border:0.5px solid var(--color-border-secondary, #d1d5db);border-radius:20px;overflow:hidden}
+.pill{padding:5px 14px;font-size:13px;cursor:pointer;background:transparent;border:none;color:var(--color-text-secondary, #4b5563)}
+
+.pill.on{background:var(--color-text-primary, #111827);color:var(--color-background-primary, #ffffff)}
+.slabel{font-size:11px;font-weight:500;color:var(--color-text-tertiary, #6b7280);text-transform:uppercase;margin-bottom:5px}
+.chart-title{font-size:13px;font-weight:500;color:var(--color-text-secondary, #4b5563);margin:1rem 0 4px}
+.cw{position:relative;width:100%;height:260px}
+.leg{display:flex;gap:16px;font-size:12px;color:var(--color-text-secondary, #4b5563);margin-bottom:.5rem}
+.leg span{display:flex;align-items:center;gap:5px}
+.lsq{display:inline-block;width:20px;height:3px;border-radius:2px}
+.warn{background:var(--color-background-warning, #fef08a);border:0.5px solid var(--color-border-warning, #facc15);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--color-text-warning, #854d0e);margin-bottom:1rem;display:none}
+</style>
+
+<div style="padding:18px 0 0">
+<h4 class="sr-only">32 platform threads on ARM with 16 cores</h4>
+<hr>
+<div class="ctrl-row">
+  <div><div class="slabel">allocation</div>
+    <div class="pg" id="gm">
+      <button class="pill on" data-v="direct">direct</button>
+      <button class="pill" data-v="heap">heap</button>
+    </div></div>
+  <div><div class="slabel">pattern</div>
+    <div class="pg" id="gp">
+      <button class="pill on" data-v="SOCKET_PROXY">SOCKET_PROXY</button>
+      <button class="pill" data-v="API_GATEWAY">API_GATEWAY</button>
+    </div></div>
+  <div><div class="slabel">read/write</div>
+    <div class="pg" id="gr">
+      <button class="pill on" data-v="true">on</button>
+      <button class="pill" data-v="false">off</button>
+    </div></div>
+</div>
+
+<div class="leg">
+  <span><span class="lsq" style="background:#4a7fcb"></span>POOLED</span>
+  <span><span class="lsq" style="background:#2aaa6e"></span>ADAPTIVE</span>
+  <span><span class="lsq" style="background:#d05a2a"></span>MIMALLOC</span>
+</div>
+
+<div class="chart-title">Latency (ns/op)&nbsp;&nbsp;<span style="font-weight:400;color:var(--color-text-tertiary)">the lower the better</span></div>
+<div class="cw"><canvas id="cL" role="img" aria-label="Allocation latency line chart"></canvas></div>
+
+<div class="chart-title">RSS (MiB)</div>
+<div class="cw"><canvas id="cR" role="img" aria-label="RSS memory line chart"></canvas></div>
+
+<div class="chart-title">allocator used direct/heap memory (MiB)</div>
+<div class="cw"><canvas id="cNew" role="img" aria-label="UsedMemory chart"></canvas></div>
+
+</div>
+
+<script>
+const D=[["direct",128,"POOLED","false","SOCKET_PROXY",420,15739,128],["direct",128,"POOLED","false","API_GATEWAY",415,15733,128],["direct",128,"POOLED","true","SOCKET_PROXY",624,15712,128],["direct",128,"POOLED","true","API_GATEWAY",482,15732,128],["direct",128,"ADAPTIVE","false","SOCKET_PROXY",224,350,107],["direct",128,"ADAPTIVE","false","API_GATEWAY",222,467,127],["direct",128,"ADAPTIVE","true","SOCKET_PROXY",242,348,106],["direct",128,"ADAPTIVE","true","API_GATEWAY",217,465,128],["direct",128,"MIMALLOC","false","SOCKET_PROXY",152,355,128],["direct",128,"MIMALLOC","false","API_GATEWAY",170,629,316],["direct",128,"MIMALLOC","true","SOCKET_PROXY",149,357,128],["direct",128,"MIMALLOC","true","API_GATEWAY",156,652,316],["direct",1024,"POOLED","false","SOCKET_PROXY",379,15863,256],["direct",1024,"POOLED","false","API_GATEWAY",458,15879,256],["direct",1024,"POOLED","true","SOCKET_PROXY",402,15861,256],["direct",1024,"POOLED","true","API_GATEWAY",501,15879,256],["direct",1024,"ADAPTIVE","false","SOCKET_PROXY",205,417,183],["direct",1024,"ADAPTIVE","false","API_GATEWAY",239,885,313],["direct",1024,"ADAPTIVE","true","SOCKET_PROXY",259,427,183],["direct",1024,"ADAPTIVE","true","API_GATEWAY",266,837,303],["direct",1024,"MIMALLOC","false","SOCKET_PROXY",156,485,256],["direct",1024,"MIMALLOC","false","API_GATEWAY",169,634,384],["direct",1024,"MIMALLOC","true","SOCKET_PROXY",152,483,256],["direct",1024,"MIMALLOC","true","API_GATEWAY",203,632,384],["direct",4096,"POOLED","false","SOCKET_PROXY",455,16138,512],["direct",4096,"POOLED","false","API_GATEWAY",543,16284,640],["direct",4096,"POOLED","true","SOCKET_PROXY",589,16109,512],["direct",4096,"POOLED","true","API_GATEWAY",544,16266,640],["direct",4096,"ADAPTIVE","false","SOCKET_PROXY",272,915,432],["direct",4096,"ADAPTIVE","false","API_GATEWAY",230,2743,808],["direct",4096,"ADAPTIVE","true","SOCKET_PROXY",269,882,422],["direct",4096,"ADAPTIVE","true","API_GATEWAY",335,2707,797],["direct",4096,"MIMALLOC","false","SOCKET_PROXY",157,893,624],["direct",4096,"MIMALLOC","false","API_GATEWAY",187,1026,768],["direct",4096,"MIMALLOC","true","SOCKET_PROXY",170,907,656],["direct",4096,"MIMALLOC","true","API_GATEWAY",186,1015,768],["direct",8192,"POOLED","false","SOCKET_PROXY",553,16667,900],["direct",8192,"POOLED","false","API_GATEWAY",406,16937,1224],["direct",8192,"POOLED","true","SOCKET_PROXY",939,16639,884],["direct",8192,"POOLED","true","API_GATEWAY",571,16918,1256],["direct",8192,"ADAPTIVE","false","SOCKET_PROXY",251,1252,767],["direct",8192,"ADAPTIVE","false","API_GATEWAY",343,4328,1392],["direct",8192,"ADAPTIVE","true","SOCKET_PROXY",326,1176,744],["direct",8192,"ADAPTIVE","true","API_GATEWAY",525,4114,1353],["direct",8192,"MIMALLOC","false","SOCKET_PROXY",175,1289,1024],["direct",8192,"MIMALLOC","false","API_GATEWAY",271,1548,1300],["direct",8192,"MIMALLOC","true","SOCKET_PROXY",178,1287,1020],["direct",8192,"MIMALLOC","true","API_GATEWAY",198,1525,1284],["direct",16384,"POOLED","false","SOCKET_PROXY",607,17463,1792],["direct",16384,"POOLED","false","API_GATEWAY",417,17991,2304],["direct",16384,"POOLED","true","SOCKET_PROXY",565,17451,1792],["direct",16384,"POOLED","true","API_GATEWAY",698,18002,2304],["direct",16384,"ADAPTIVE","false","SOCKET_PROXY",239,2006,1409],["direct",16384,"ADAPTIVE","false","API_GATEWAY",697,7488,2673],["direct",16384,"ADAPTIVE","true","SOCKET_PROXY",416,1911,1413],["direct",16384,"ADAPTIVE","true","API_GATEWAY",1020,5861,2703],["direct",16384,"MIMALLOC","false","SOCKET_PROXY",253,2094,1792],["direct",16384,"MIMALLOC","false","API_GATEWAY",364,2611,2308],["direct",16384,"MIMALLOC","true","SOCKET_PROXY",253,2155,1840],["direct",16384,"MIMALLOC","true","API_GATEWAY",369,2613,2304],["direct",32768,"POOLED","false","SOCKET_PROXY",415,19358,3584],["direct",32768,"POOLED","false","API_GATEWAY",801,20265,4480],["direct",32768,"POOLED","true","SOCKET_PROXY",669,19348,3584],["direct",32768,"POOLED","true","API_GATEWAY",977,20266,4480],["direct",32768,"ADAPTIVE","false","SOCKET_PROXY",289,4786,2941],["direct",32768,"ADAPTIVE","false","API_GATEWAY",1083,9557,4981],["direct",32768,"ADAPTIVE","true","SOCKET_PROXY",499,4394,2919],["direct",32768,"ADAPTIVE","true","API_GATEWAY",1699,8904,4941],["direct",32768,"MIMALLOC","false","SOCKET_PROXY",348,3647,3328],["direct",32768,"MIMALLOC","false","API_GATEWAY",409,4496,4180],["direct",32768,"MIMALLOC","true","SOCKET_PROXY",300,3641,3328],["direct",32768,"MIMALLOC","true","API_GATEWAY",383,4479,4172],["direct",65536,"POOLED","false","SOCKET_PROXY",478,23567,6784],["direct",65536,"POOLED","false","API_GATEWAY",502,25594,8704],["direct",65536,"POOLED","true","SOCKET_PROXY",912,23562,6784],["direct",65536,"POOLED","true","API_GATEWAY",855,25587,8704],["direct",65536,"ADAPTIVE","false","SOCKET_PROXY",264,6511,5340],["direct",65536,"ADAPTIVE","false","API_GATEWAY",1745,15133,9678],["direct",65536,"ADAPTIVE","true","SOCKET_PROXY",484,5947,5317],["direct",65536,"ADAPTIVE","true","API_GATEWAY",2105,14254,9600],["direct",65536,"MIMALLOC","false","SOCKET_PROXY",364,6838,6396],["direct",65536,"MIMALLOC","false","API_GATEWAY",477,8275,7832],["direct",65536,"MIMALLOC","true","SOCKET_PROXY",323,6811,6388],["direct",65536,"MIMALLOC","true","API_GATEWAY",463,8282,7840],["heap",128,"POOLED","false","SOCKET_PROXY",502,15822,128],["heap",128,"POOLED","false","API_GATEWAY",351,15830,128],["heap",128,"POOLED","true","SOCKET_PROXY",358,15792,128],["heap",128,"POOLED","true","API_GATEWAY",501,15818,128],["heap",128,"ADAPTIVE","false","SOCKET_PROXY",215,331,106],["heap",128,"ADAPTIVE","false","API_GATEWAY",235,446,124],["heap",128,"ADAPTIVE","true","SOCKET_PROXY",228,313,105],["heap",128,"ADAPTIVE","true","API_GATEWAY",244,510,126],["heap",128,"MIMALLOC","false","SOCKET_PROXY",158,360,128],["heap",128,"MIMALLOC","false","API_GATEWAY",286,2125,340],["heap",128,"MIMALLOC","true","SOCKET_PROXY",138,364,128],["heap",128,"MIMALLOC","true","API_GATEWAY",195,2072,340],["heap",1024,"POOLED","false","SOCKET_PROXY",383,15978,256],["heap",1024,"POOLED","false","API_GATEWAY",382,16061,256],["heap",1024,"POOLED","true","SOCKET_PROXY",392,15921,256],["heap",1024,"POOLED","true","API_GATEWAY",393,16001,256],["heap",1024,"ADAPTIVE","false","SOCKET_PROXY",252,416,186],["heap",1024,"ADAPTIVE","false","API_GATEWAY",240,963,346],["heap",1024,"ADAPTIVE","true","SOCKET_PROXY",220,423,183],["heap",1024,"ADAPTIVE","true","API_GATEWAY",277,841,316],["heap",1024,"MIMALLOC","false","SOCKET_PROXY",158,523,268],["heap",1024,"MIMALLOC","false","API_GATEWAY",182,677,384],["heap",1024,"MIMALLOC","true","SOCKET_PROXY",162,504,256],["heap",1024,"MIMALLOC","true","API_GATEWAY",205,676,384],["heap",4096,"POOLED","false","SOCKET_PROXY",363,16257,512],["heap",4096,"POOLED","false","API_GATEWAY",380,16411,640],["heap",4096,"POOLED","true","SOCKET_PROXY",491,16400,512],["heap",4096,"POOLED","true","API_GATEWAY",430,16393,640],["heap",4096,"ADAPTIVE","false","SOCKET_PROXY",249,902,421],["heap",4096,"ADAPTIVE","false","API_GATEWAY",238,2833,794],["heap",4096,"ADAPTIVE","true","SOCKET_PROXY",262,859,422],["heap",4096,"ADAPTIVE","true","API_GATEWAY",463,2740,797],["heap",4096,"MIMALLOC","false","SOCKET_PROXY",155,953,624],["heap",4096,"MIMALLOC","false","API_GATEWAY",189,1122,768],["heap",4096,"MIMALLOC","true","SOCKET_PROXY",179,966,632],["heap",4096,"MIMALLOC","true","API_GATEWAY",203,1124,768],["heap",8192,"POOLED","false","SOCKET_PROXY",800,16861,896],["heap",8192,"POOLED","false","API_GATEWAY",399,17268,1244],["heap",8192,"POOLED","true","SOCKET_PROXY",713,16911,896],["heap",8192,"POOLED","true","API_GATEWAY",780,17238,1260],["heap",8192,"ADAPTIVE","false","SOCKET_PROXY",256,1273,766],["heap",8192,"ADAPTIVE","false","API_GATEWAY",353,21518,1379],["heap",8192,"ADAPTIVE","true","SOCKET_PROXY",307,1177,745],["heap",8192,"ADAPTIVE","true","API_GATEWAY",529,14634,1371],["heap",8192,"MIMALLOC","false","SOCKET_PROXY",247,2325,1036],["heap",8192,"MIMALLOC","false","API_GATEWAY",569,2306,1288],["heap",8192,"MIMALLOC","true","SOCKET_PROXY",236,2295,1024],["heap",8192,"MIMALLOC","true","API_GATEWAY",892,2305,1288],["heap",16384,"POOLED","false","SOCKET_PROXY",393,17880,1792],["heap",16384,"POOLED","false","API_GATEWAY",600,18555,2304],["heap",16384,"POOLED","true","SOCKET_PROXY",715,17842,1792],["heap",16384,"POOLED","true","API_GATEWAY",819,18551,2304],["heap",16384,"ADAPTIVE","false","SOCKET_PROXY",419,2575,1409],["heap",16384,"ADAPTIVE","false","API_GATEWAY",804,26323,2726],["heap",16384,"ADAPTIVE","true","SOCKET_PROXY",371,2562,1401],["heap",16384,"ADAPTIVE","true","API_GATEWAY",930,26329,2724],["heap",16384,"MIMALLOC","false","SOCKET_PROXY",483,3256,1792],["heap",16384,"MIMALLOC","false","API_GATEWAY",654,3280,2300],["heap",16384,"MIMALLOC","true","SOCKET_PROXY",566,3260,1800],["heap",16384,"MIMALLOC","true","API_GATEWAY",565,3319,2304],["heap",32768,"POOLED","false","SOCKET_PROXY",455,20286,3584],["heap",32768,"POOLED","false","API_GATEWAY",646,21745,4476],["heap",32768,"POOLED","true","SOCKET_PROXY",624,20314,3584],["heap",32768,"POOLED","true","API_GATEWAY",1081,21613,4480],["heap",32768,"ADAPTIVE","false","SOCKET_PROXY",383,4699,2757],["heap",32768,"ADAPTIVE","false","API_GATEWAY",1634,26338,5040],["heap",32768,"ADAPTIVE","true","SOCKET_PROXY",482,3631,2722],["heap",32768,"ADAPTIVE","true","API_GATEWAY",1851,26346,5023],["heap",32768,"MIMALLOC","false","SOCKET_PROXY",504,5217,3328],["heap",32768,"MIMALLOC","false","API_GATEWAY",661,6219,4136],["heap",32768,"MIMALLOC","true","SOCKET_PROXY",467,5247,3336],["heap",32768,"MIMALLOC","true","API_GATEWAY",772,6171,4176],["heap",65536,"POOLED","false","SOCKET_PROXY",461,24200,6784],["heap",65536,"POOLED","false","API_GATEWAY",709,25224,8704],["heap",65536,"POOLED","true","SOCKET_PROXY",700,24012,6784],["heap",65536,"POOLED","true","API_GATEWAY",1030,25244,8704],["heap",65536,"ADAPTIVE","false","SOCKET_PROXY",644,7009,5318],["heap",65536,"ADAPTIVE","false","API_GATEWAY",2201,26358,9802],["heap",65536,"ADAPTIVE","true","SOCKET_PROXY",641,7022,5316],["heap",65536,"ADAPTIVE","true","API_GATEWAY",2312,26348,9652],["heap",65536,"MIMALLOC","false","SOCKET_PROXY",527,8185,6392],["heap",65536,"MIMALLOC","false","API_GATEWAY",753,10116,7808],["heap",65536,"MIMALLOC","true","SOCKET_PROXY",588,8169,6388],["heap",65536,"MIMALLOC","true","API_GATEWAY",825,10109,7812]];
+
+const BUFS=[128,1024,4096,8192,16384,32768,65536];
+const AL=["POOLED","ADAPTIVE","MIMALLOC"];
+const CLR={"POOLED":"#4a7fcb","ADAPTIVE":"#2aaa6e","MIMALLOC":"#d05a2a"};
+let st={method:"direct",pattern:"SOCKET_PROXY",rw:"true"};
+let cL,cR;
+
+function rows(){return D.filter(r=>r[0]===st.method&&r[3]===st.rw&&r[4]===st.pattern);}
+function ds(col){
+  return AL.map(a=>{
+    const sub=rows().filter(r=>r[2]===a);
+    return{label:a,data:BUFS.map(b=>{const r=sub.find(x=>x[1]===b);return r?r[col]:null;}),
+      borderColor:CLR[a],backgroundColor:CLR[a]+"22",borderWidth:2,
+    };
+  });
+}
+function opts(ytitle){
+  return{responsive:true,maintainAspectRatio:false,animation:{duration:300},
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y!=null?Math.round(c.parsed.y):"n/a"}`}}},
+    scales:{x:{grid:{color:"rgba(128,128,128,.12)"},ticks:{font:{size:11}},title:{display:true,text:"Live buffers",font:{size:11}}},
+            y:{grid:{color:"rgba(128,128,128,.12)"},ticks:{font:{size:11}},title:{display:true,text:ytitle,font:{size:11}}}}};
+}
+function draw(){
+  const lData={labels:BUFS.map(String),datasets:ds(5)};
+  const rData={labels:BUFS.map(String),datasets:ds(6)};
+  const nData={labels:BUFS.map(String),datasets:ds(7)};
+  if(cL){cL.data=lData;cL.update();}
+  if(cR){cR.data=rData;cR.update();}
+  if (cNew) { cNew.data = nData; cNew.update(); }
+}
+
+document.querySelectorAll(".pg").forEach(g=>{
+  g.addEventListener("click",e=>{
+    const b=e.target.closest(".pill");if(!b)return;
+    g.querySelectorAll(".pill").forEach(p=>p.classList.remove("on"));
+    b.classList.add("on");
+    const id=g.id;
+    if(id==="gm")st.method=b.dataset.v;
+    if(id==="gp")st.pattern=b.dataset.v;
+    if(id==="gr")st.rw=b.dataset.v;
+    draw();
+  });
+});
+
+function loadChartJS(cb){
+  const CDNS=[
+    "https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"
+  ];
+  let done=false;
+  CDNS.forEach(url=>{
+    const s=document.createElement("script");
+    s.src=url;
+    s.onload=()=>{ if(!done){ done=true; cb(); } };
+    document.head.appendChild(s);
+  });
+}
+loadChartJS(function(){
+  cL=new Chart(document.getElementById("cL"),{type:"line",data:{labels:BUFS.map(String),datasets:ds(5)},options:opts("ns/op")});
+  cR=new Chart(document.getElementById("cR"),{type:"line",data:{labels:BUFS.map(String),datasets:ds(6)},options:opts("MiB")});
+  cNew = new Chart(document.getElementById("cNew"), {
+      type: "line",
+      data: { labels: BUFS.map(String), datasets: ds(7) },
+      options: opts("MiB")
+    });
+
+  if (window.parent) parent.postMessage("charts-ready", "*");
+});
+</script>
+</body></html>' style="display:none" frameborder="0"></iframe>
+  <iframe id="f2" data-srcdoc='<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;padding:0 12px;font-family:system-ui,sans-serif}</style></head><body>
+<style>
+.ctrl-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1rem;align-items:flex-end}
+
+.pg{display:flex;border:0.5px solid var(--color-border-secondary, #d1d5db);border-radius:20px;overflow:hidden}
+.pill{padding:5px 14px;font-size:13px;cursor:pointer;background:transparent;border:none;color:var(--color-text-secondary, #4b5563)}
+
+.pill.on{background:var(--color-text-primary, #111827);color:var(--color-background-primary, #ffffff)}
+.slabel{font-size:11px;font-weight:500;color:var(--color-text-tertiary, #6b7280);text-transform:uppercase;margin-bottom:5px}
+.chart-title{font-size:13px;font-weight:500;color:var(--color-text-secondary, #4b5563);margin:1rem 0 4px}
+.cw{position:relative;width:100%;height:260px}
+.leg{display:flex;gap:16px;font-size:12px;color:var(--color-text-secondary, #4b5563);margin-bottom:.5rem}
+.leg span{display:flex;align-items:center;gap:5px}
+.lsq{display:inline-block;width:20px;height:3px;border-radius:2px}
+.warn{background:var(--color-background-warning, #fef08a);border:0.5px solid var(--color-border-warning, #facc15);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--color-text-warning, #854d0e);margin-bottom:1rem;display:none}
+</style>
+
+<div style="padding:18px 0 0">
+<h4 class="sr-only">32 event loop threads on X86 with 16 cores</h4>
+<hr>
+<div class="ctrl-row">
+  <div><div class="slabel">allocation</div>
+    <div class="pg" id="gm">
+      <button class="pill on" data-v="direct">direct</button>
+      <button class="pill" data-v="heap">heap</button>
+    </div></div>
+  <div><div class="slabel">pattern</div>
+    <div class="pg" id="gp">
+      <button class="pill on" data-v="SOCKET_PROXY">SOCKET_PROXY</button>
+      <button class="pill" data-v="API_GATEWAY">API_GATEWAY</button>
+    </div></div>
+  <div><div class="slabel">read/write</div>
+    <div class="pg" id="gr">
+      <button class="pill on" data-v="true">on</button>
+      <button class="pill" data-v="false">off</button>
+    </div></div>
+</div>
+
+<div class="leg">
+  <span><span class="lsq" style="background:#4a7fcb"></span>POOLED</span>
+  <span><span class="lsq" style="background:#2aaa6e"></span>ADAPTIVE</span>
+  <span><span class="lsq" style="background:#d05a2a"></span>MIMALLOC</span>
+</div>
+
+<div class="chart-title">Latency (ns/op)&nbsp;&nbsp;<span style="font-weight:400;color:var(--color-text-tertiary)">the lower the better</span></div>
+<div class="cw"><canvas id="cL" role="img" aria-label="Allocation latency line chart"></canvas></div>
+
+<div class="chart-title">RSS (MiB)</div>
+<div class="cw"><canvas id="cR" role="img" aria-label="RSS memory line chart"></canvas></div>
+</div>
+
+<script>
+const D=[];
+
+
+const BUFS=[128,1024,4096,8192,16384,32768,65536];
+const AL=["POOLED","ADAPTIVE","MIMALLOC"];
+const CLR={"POOLED":"#4a7fcb","ADAPTIVE":"#2aaa6e","MIMALLOC":"#d05a2a"};
+let st={method:"direct",pattern:"SOCKET_PROXY",rw:"true"};
+let cL,cR;
+
+function rows(){return D.filter(r=>r[0]===st.method&&r[3]===st.rw&&r[4]===st.pattern);}
+function ds(col){
+  return AL.map(a=>{
+    const sub=rows().filter(r=>r[2]===a);
+    return{label:a,data:BUFS.map(b=>{const r=sub.find(x=>x[1]===b);return r?r[col]:null;}),
+      borderColor:CLR[a],backgroundColor:CLR[a]+"22",borderWidth:2,
+    };
+  });
+}
+function opts(ytitle){
+  return{responsive:true,maintainAspectRatio:false,animation:{duration:300},
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y!=null?Math.round(c.parsed.y):"n/a"}`}}},
+    scales:{x:{grid:{color:"rgba(128,128,128,.12)"},ticks:{font:{size:11}},title:{display:true,text:"Live buffers",font:{size:11}}},
+            y:{grid:{color:"rgba(128,128,128,.12)"},ticks:{font:{size:11}},title:{display:true,text:ytitle,font:{size:11}}}}};
+}
+function draw(){
+  const lData={labels:BUFS.map(String),datasets:ds(5)};
+  const rData={labels:BUFS.map(String),datasets:ds(6)};
+  if(cL){cL.data=lData;cL.update();}
+  if(cR){cR.data=rData;cR.update();}
+}
+
+document.querySelectorAll(".pg").forEach(g=>{
+  g.addEventListener("click",e=>{
+    const b=e.target.closest(".pill");if(!b)return;
+    g.querySelectorAll(".pill").forEach(p=>p.classList.remove("on"));
+    b.classList.add("on");
+    const id=g.id;
+    if(id==="gm")st.method=b.dataset.v;
+    if(id==="gp")st.pattern=b.dataset.v;
+    if(id==="gr")st.rw=b.dataset.v;
+    draw();
+  });
+});
+
+function loadChartJS(cb){
+  const CDNS=[
+    "https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"
+  ];
+  let done=false;
+  CDNS.forEach(url=>{
+    const s=document.createElement("script");
+    s.src=url;
+    s.onload=()=>{ if(!done){ done=true; cb(); } };
+    document.head.appendChild(s);
+  });
+}
+loadChartJS(function(){
+  cL=new Chart(document.getElementById("cL"),{type:"line",data:{labels:BUFS.map(String),datasets:ds(5)},options:opts("ns/op")});
+  cR=new Chart(document.getElementById("cR"),{type:"line",data:{labels:BUFS.map(String),datasets:ds(6)},options:opts("MiB")});
+  parent.postMessage("charts-ready", "*");
+});
+
+</script>
+</body></html>' style="display:none" frameborder="0"></iframe>
+  <iframe id="f3" data-srcdoc='<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;padding:0 12px;font-family:system-ui,sans-serif}</style></head><body>
+<style>
+.ctrl-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1rem;align-items:flex-end}
+
+.pg{display:flex;border:0.5px solid var(--color-border-secondary, #d1d5db);border-radius:20px;overflow:hidden}
+.pill{padding:5px 14px;font-size:13px;cursor:pointer;background:transparent;border:none;color:var(--color-text-secondary, #4b5563)}
+
+.pill.on{background:var(--color-text-primary, #111827);color:var(--color-background-primary, #ffffff)}
+.slabel{font-size:11px;font-weight:500;color:var(--color-text-tertiary, #6b7280);text-transform:uppercase;margin-bottom:5px}
+.chart-title{font-size:13px;font-weight:500;color:var(--color-text-secondary, #4b5563);margin:1rem 0 4px}
+.cw{position:relative;width:100%;height:260px}
+.leg{display:flex;gap:16px;font-size:12px;color:var(--color-text-secondary, #4b5563);margin-bottom:.5rem}
+.leg span{display:flex;align-items:center;gap:5px}
+.lsq{display:inline-block;width:20px;height:3px;border-radius:2px}
+.warn{background:var(--color-background-warning, #fef08a);border:0.5px solid var(--color-border-warning, #facc15);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--color-text-warning, #854d0e);margin-bottom:1rem;display:none}
+</style>
+
+<div style="padding:18px 0 0">
+<h4 class="sr-only">32 platform threads on X86 with 16 cores</h4>
+<hr>
+<div class="ctrl-row">
+  <div><div class="slabel">allocation</div>
+    <div class="pg" id="gm">
+      <button class="pill on" data-v="direct">direct</button>
+      <button class="pill" data-v="heap">heap</button>
+    </div></div>
+  <div><div class="slabel">pattern</div>
+    <div class="pg" id="gp">
+      <button class="pill on" data-v="SOCKET_PROXY">SOCKET_PROXY</button>
+      <button class="pill" data-v="API_GATEWAY">API_GATEWAY</button>
+    </div></div>
+  <div><div class="slabel">read/write</div>
+    <div class="pg" id="gr">
+      <button class="pill on" data-v="true">on</button>
+      <button class="pill" data-v="false">off</button>
+    </div></div>
+</div>
+
+<div class="leg">
+  <span><span class="lsq" style="background:#4a7fcb"></span>POOLED</span>
+  <span><span class="lsq" style="background:#2aaa6e"></span>ADAPTIVE</span>
+  <span><span class="lsq" style="background:#d05a2a"></span>MIMALLOC</span>
+</div>
+
+<div class="chart-title">Latency (ns/op)&nbsp;&nbsp;<span style="font-weight:400;color:var(--color-text-tertiary)">the lower the better</span></div>
+<div class="cw"><canvas id="cL" role="img" aria-label="Allocation latency line chart"></canvas></div>
+
+<div class="chart-title">RSS (MiB)</div>
+<div class="cw"><canvas id="cR" role="img" aria-label="RSS memory line chart"></canvas></div>
+</div>
+
+<script>
+const D=[];
+
+const BUFS=[128,1024,4096,8192,16384,32768,65536];
+const AL=["POOLED","ADAPTIVE","MIMALLOC"];
+const CLR={"POOLED":"#4a7fcb","ADAPTIVE":"#2aaa6e","MIMALLOC":"#d05a2a"};
+let st={method:"direct",pattern:"SOCKET_PROXY",rw:"true"};
+let cL,cR;
+
+function rows(){return D.filter(r=>r[0]===st.method&&r[3]===st.rw&&r[4]===st.pattern);}
+function ds(col){
+  return AL.map(a=>{
+    const sub=rows().filter(r=>r[2]===a);
+    return{label:a,data:BUFS.map(b=>{const r=sub.find(x=>x[1]===b);return r?r[col]:null;}),
+      borderColor:CLR[a],backgroundColor:CLR[a]+"22",borderWidth:2,
+    };
+  });
+}
+function opts(ytitle){
+  return{responsive:true,maintainAspectRatio:false,animation:{duration:300},
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y!=null?Math.round(c.parsed.y):"n/a"}`}}},
+    scales:{x:{grid:{color:"rgba(128,128,128,.12)"},ticks:{font:{size:11}},title:{display:true,text:"Live buffers",font:{size:11}}},
+            y:{grid:{color:"rgba(128,128,128,.12)"},ticks:{font:{size:11}},title:{display:true,text:ytitle,font:{size:11}}}}};
+}
+function draw(){
+  const lData={labels:BUFS.map(String),datasets:ds(5)};
+  const rData={labels:BUFS.map(String),datasets:ds(6)};
+  if(cL){cL.data=lData;cL.update();}
+  if(cR){cR.data=rData;cR.update();}
+}
+
+document.querySelectorAll(".pg").forEach(g=>{
+  g.addEventListener("click",e=>{
+    const b=e.target.closest(".pill");if(!b)return;
+    g.querySelectorAll(".pill").forEach(p=>p.classList.remove("on"));
+    b.classList.add("on");
+    const id=g.id;
+    if(id==="gm")st.method=b.dataset.v;
+    if(id==="gp")st.pattern=b.dataset.v;
+    if(id==="gr")st.rw=b.dataset.v;
+    draw();
+  });
+});
+
+function loadChartJS(cb){
+  const CDNS=[
+    "https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"
+  ];
+  let done=false;
+  CDNS.forEach(url=>{
+    const s=document.createElement("script");
+    s.src=url;
+    s.onload=()=>{ if(!done){ done=true; cb(); } };
+    document.head.appendChild(s);
+  });
+}
+loadChartJS(function(){
+  cL=new Chart(document.getElementById("cL"),{type:"line",data:{labels:BUFS.map(String),datasets:ds(5)},options:opts("ns/op")});
+  cR=new Chart(document.getElementById("cR"),{type:"line",data:{labels:BUFS.map(String),datasets:ds(6)},options:opts("MiB")});
+  if (window.parent) parent.postMessage("charts-ready", "*");
+});
+</script>
+</body></html>' style="display:none" frameborder="0"></iframe>
+</main>
+
+<script>
+const btns = document.querySelectorAll(".nav-btn");
+const frames = document.querySelectorAll("iframe");
+
+function show(btn, i) {
+  btns.forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  frames.forEach((f, j) => {
+    if (j === i) {
+      if (!f.srcdoc) f.srcdoc = f.dataset.srcdoc;
+      f.style.display = "block";
+    } else {
+      f.style.display = "none";
+    }
+  });
+}
+
+window.addEventListener('message', e => {
+  if (e.data === 'charts-ready') {
+    const el = document.getElementById('loading');
+    el.style.opacity = '0';
+    el.style.transition = 'opacity .3s';
+    setTimeout(() => el.remove(), 300);
+  }
+});
+
+// click first button on laod.
+btns[0].click();
+</script>
+</body>
+</html>
