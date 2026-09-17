@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Netty Allocators Benchmark</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  display: flex;
+  height: 100vh;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #e2e8f0;
+}
+
+nav {
+  width: 200px;
+  flex-shrink: 0;
+  border-right: 1px solid #252830;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 12px;
+  gap: 4px;
+}
+
+.logo {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #16191f;
+  padding: 0 4px 16px;
+  border-bottom: 1px solid #252830;
+  margin-bottom: 8px;
+}
+
+.logo span {
+  display: block;
+  font-size: 12px;
+  font-weight: 450;
+  letter-spacing: 0.05em;
+  color: #475569;
+  margin-top: 16px;
+}
+
+.nav-btn {
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  padding: 9px 12px;
+  text-align: left;
+  font-size: 16px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  line-height: 1.4;
+}
+
+.nav-btn:hover {
+  background: #1e2230;
+  color: #cbd5e1;
+}
+
+.nav-btn.active {
+  background: #1e2a40;
+  color: #ffffff;
+}
+
+.nav-btn::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  margin-right: 8px;
+  opacity: 0.6;
+  vertical-align: middle;
+  position: relative;
+  top: -1px;
+}
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: #ffffff;
+}
+
+iframe {
+  width: 100%;
+  flex: 1;
+  border: none;
+}
+
+#loading {
+  position: fixed;
+  inset: 0;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(3px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  gap: 14px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.spinner {
+  width: 42px;
+  height: 42px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin .75s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div id="loading">
+  <div class="spinner"></div>
+  <span>loading…</span>
+</div>
+<nav>
+  <div class="logo">Allocator Bench<span>32 threads · 16 vCPUs · AMD Ryzen 9 7950X</span></div>
+
+  <button class="nav-btn active" onclick="show(this,0)">Eventloop on x86</button>
+  <button class="nav-btn" onclick="show(this,1)">Platform on x86</button>
+</nav>
+
+<main>
+  <iframe id="f0" data-srcdoc='<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;padding:0 12px;font-family:system-ui,sans-serif}</style></head><body>
+<style>
+.ctrl-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1rem;align-items:flex-end}
+
+.pg{display:flex;border:0.5px solid var(--color-border-secondary, #d1d5db);border-radius:20px;overflow:hidden}
+.pill{padding:5px 14px;font-size:13px;cursor:pointer;background:transparent;border:none;color:var(--color-text-secondary, #4b5563)}
+
+.pill.on{background:var(--color-text-primary, #111827);color:var(--color-background-primary, #ffffff)}
+.slabel{font-size:11px;font-weight:500;color:var(--color-text-tertiary, #6b7280);text-transform:uppercase;margin-bottom:5px}
+.chart-title{font-size:13px;font-weight:500;color:var(--color-text-secondary, #4b5563);margin:1rem 0 4px}
+.cw{position:relative;width:100%;height:260px}
+.leg{display:flex;gap:16px;font-size:12px;color:var(--color-text-secondary, #4b5563);margin-bottom:.5rem}
+.leg span{display:flex;align-items:center;gap:5px}
+.lsq{display:inline-block;width:20px;height:3px;border-radius:2px}
+.warn{background:var(--color-background-warning, #fef08a);border:0.5px solid var(--color-border-warning, #facc15);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--color-text-warning, #854d0e);margin-bottom:1rem;display:none}
+</style>
+
+<div style="padding:18px 0 0">
+<h4 class="sr-only">32 event loop threads on x86 (AMD Ryzen 9 7950X) with 16 vCPUs</h4>
+<hr>
+<div class="ctrl-row">
+  <div><div class="slabel">allocation</div>
+    <div class="pg" id="gm">
+      <button class="pill on" data-v="direct">direct</button>
+      <button class="pill" data-v="heap">heap</button>
+    </div></div>
+  <div><div class="slabel">pattern</div>
+    <div class="pg" id="gp">
+      <button class="pill on" data-v="SOCKET_PROXY">SOCKET_PROXY</button>
+      <button class="pill" data-v="API_GATEWAY">API_GATEWAY</button>
+    </div></div>
+  <div><div class="slabel">read/write</div>
+    <div class="pg" id="gr">
+      <button class="pill on" data-v="true">on</button>
+      <button class="pill" data-v="false">off</button>
+    </div></div>
+</div>
+
+<div class="leg">
+  <span><span class="lsq" style="background:#4a7fcb"></span>POOLED</span>
+  <span><span class="lsq" style="background:#2aaa6e"></span>ADAPTIVE</span>
+  <span><span class="lsq" style="background:#d05a2a"></span>MIMALLOC</span>
+</div>
+
+<div class="chart-title">Latency (ns/op)&nbsp;&nbsp;<span style="font-weight:400;color:var(--color-text-tertiary)">the lower the better</span></div>
+<div class="cw"><canvas id="cL" role="img" aria-label="Allocation latency line chart"></canvas></div>
+
+<div class="chart-title">RSS (MiB)</div>
+<div class="cw"><canvas id="cR" role="img" aria-label="RSS memory line chart"></canvas></div>
+
+<div class="chart-title">allocator used memory (MiB)&nbsp;&nbsp;<span style="font-weight:400;color:var(--color-text-tertiary)">allocator.usedDirectMemory() or allocator.usedHeapMemory()</span></div>
+<div class="cw"><canvas id="cNew" role="img" aria-label="UsedMemory chart"></canvas></div>
+
+</div>
+
+<script>
+const D=[["direct",128,"POOLED","false","SOCKET_PROXY",497,353,128],["direct",128,"POOLED","false","API_GATEWAY",552,599,128],["direct",128,"POOLED","true","SOCKET_PROXY",503,356,128],["direct",128,"POOLED","true","API_GATEWAY",440,647,128],["direct",128,"ADAPTIVE","false","SOCKET_PROXY",188,292,101],["direct",128,"ADAPTIVE","false","API_GATEWAY",223,407,129],["direct",128,"ADAPTIVE","true","SOCKET_PROXY",205,277,101],["direct",128,"ADAPTIVE","true","API_GATEWAY",236,421,124],["direct",128,"MIMALLOC","false","SOCKET_PROXY",180,307,128],["direct",128,"MIMALLOC","false","API_GATEWAY",225,587,364],["direct",128,"MIMALLOC","true","SOCKET_PROXY",195,306,128],["direct",128,"MIMALLOC","true","API_GATEWAY",233,575,332],["direct",1024,"POOLED","false","SOCKET_PROXY",585,548,256],["direct",1024,"POOLED","false","API_GATEWAY",580,931,256],["direct",1024,"POOLED","true","SOCKET_PROXY",539,558,256],["direct",1024,"POOLED","true","API_GATEWAY",569,950,256],["direct",1024,"ADAPTIVE","false","SOCKET_PROXY",205,360,183],["direct",1024,"ADAPTIVE","false","API_GATEWAY",270,635,262],["direct",1024,"ADAPTIVE","true","SOCKET_PROXY",227,359,177],["direct",1024,"ADAPTIVE","true","API_GATEWAY",271,792,260],["direct",1024,"MIMALLOC","false","SOCKET_PROXY",207,453,256],["direct",1024,"MIMALLOC","false","API_GATEWAY",314,570,384],["direct",1024,"MIMALLOC","true","SOCKET_PROXY",217,437,256],["direct",1024,"MIMALLOC","true","API_GATEWAY",270,577,384],["direct",4096,"POOLED","false","SOCKET_PROXY",651,920,512],["direct",4096,"POOLED","false","API_GATEWAY",740,1502,768],["direct",4096,"POOLED","true","SOCKET_PROXY",782,900,512],["direct",4096,"POOLED","true","API_GATEWAY",880,1440,768],["direct",4096,"ADAPTIVE","false","SOCKET_PROXY",213,796,400],["direct",4096,"ADAPTIVE","false","API_GATEWAY",327,1851,669],["direct",4096,"ADAPTIVE","true","SOCKET_PROXY",307,749,395],["direct",4096,"ADAPTIVE","true","API_GATEWAY",433,1677,662],["direct",4096,"MIMALLOC","false","SOCKET_PROXY",278,834,640],["direct",4096,"MIMALLOC","false","API_GATEWAY",425,963,768],["direct",4096,"MIMALLOC","true","SOCKET_PROXY",336,837,640],["direct",4096,"MIMALLOC","true","API_GATEWAY",386,973,768],["direct",8192,"POOLED","false","SOCKET_PROXY",744,1411,896],["direct",8192,"POOLED","false","API_GATEWAY",910,2214,1408],["direct",8192,"POOLED","true","SOCKET_PROXY",805,1408,896],["direct",8192,"POOLED","true","API_GATEWAY",1058,2189,1408],["direct",8192,"ADAPTIVE","false","SOCKET_PROXY",247,1125,749],["direct",8192,"ADAPTIVE","false","API_GATEWAY",426,2701,1168],["direct",8192,"ADAPTIVE","true","SOCKET_PROXY",456,1082,742],["direct",8192,"ADAPTIVE","true","API_GATEWAY",696,2477,1209],["direct",8192,"MIMALLOC","false","SOCKET_PROXY",353,1247,1024],["direct",8192,"MIMALLOC","false","API_GATEWAY",499,1500,1280],["direct",8192,"MIMALLOC","true","SOCKET_PROXY",391,1248,1024],["direct",8192,"MIMALLOC","true","API_GATEWAY",494,1496,1280],["direct",16384,"POOLED","false","SOCKET_PROXY",889,2508,1792],["direct",16384,"POOLED","false","API_GATEWAY",1009,3404,2432],["direct",16384,"POOLED","true","SOCKET_PROXY",909,2504,1792],["direct",16384,"POOLED","true","API_GATEWAY",1068,3399,2432],["direct",16384,"ADAPTIVE","false","SOCKET_PROXY",257,1832,1394],["direct",16384,"ADAPTIVE","false","API_GATEWAY",817,3755,2330],["direct",16384,"ADAPTIVE","true","SOCKET_PROXY",485,1777,1400],["direct",16384,"ADAPTIVE","true","API_GATEWAY",827,3702,2337],["direct",16384,"MIMALLOC","false","SOCKET_PROXY",450,2044,1792],["direct",16384,"MIMALLOC","false","API_GATEWAY",544,2536,2304],["direct",16384,"MIMALLOC","true","SOCKET_PROXY",486,2038,1792],["direct",16384,"MIMALLOC","true","API_GATEWAY",591,2543,2304],["direct",32768,"POOLED","false","SOCKET_PROXY",931,4488,3328],["direct",32768,"POOLED","false","API_GATEWAY",930,6092,4608],["direct",32768,"POOLED","true","SOCKET_PROXY",1239,4462,3324],["direct",32768,"POOLED","true","API_GATEWAY",1386,6061,4608],["direct",32768,"ADAPTIVE","false","SOCKET_PROXY",288,3142,2725],["direct",32768,"ADAPTIVE","false","API_GATEWAY",1937,19682,4580],["direct",32768,"ADAPTIVE","true","SOCKET_PROXY",542,3105,2719],["direct",32768,"ADAPTIVE","true","API_GATEWAY",1501,5811,4576],["direct",32768,"MIMALLOC","false","SOCKET_PROXY",512,3612,3328],["direct",32768,"MIMALLOC","false","API_GATEWAY",636,4501,4212],["direct",32768,"MIMALLOC","true","SOCKET_PROXY",519,3626,3328],["direct",32768,"MIMALLOC","true","API_GATEWAY",793,4381,4108],["direct",65536,"POOLED","false","SOCKET_PROXY",1097,7840,6272],["direct",65536,"POOLED","false","API_GATEWAY",1082,10773,8960],["direct",65536,"POOLED","true","SOCKET_PROXY",1290,7831,6272],["direct",65536,"POOLED","true","API_GATEWAY",1498,10575,8960],["direct",65536,"ADAPTIVE","false","SOCKET_PROXY",354,5818,5316],["direct",65536,"ADAPTIVE","false","API_GATEWAY",1826,10236,9058],["direct",65536,"ADAPTIVE","true","SOCKET_PROXY",611,5793,5311],["direct",65536,"ADAPTIVE","true","API_GATEWAY",2092,10191,9059],["direct",65536,"MIMALLOC","false","SOCKET_PROXY",569,6784,6400],["direct",65536,"MIMALLOC","false","API_GATEWAY",655,8178,7808],["direct",65536,"MIMALLOC","true","SOCKET_PROXY",607,6781,6400],["direct",65536,"MIMALLOC","true","API_GATEWAY",710,8197,7808],["heap",128,"POOLED","false","SOCKET_PROXY",533,350,128],["heap",128,"POOLED","false","API_GATEWAY",543,617,128],["heap",128,"POOLED","true","SOCKET_PROXY",575,345,128],["heap",128,"POOLED","true","API_GATEWAY",519,610,128],["heap",128,"ADAPTIVE","false","SOCKET_PROXY",194,281,105],["heap",128,"ADAPTIVE","false","API_GATEWAY",208,428,130],["heap",128,"ADAPTIVE","true","SOCKET_PROXY",232,281,105],["heap",128,"ADAPTIVE","true","API_GATEWAY",247,403,126],["heap",128,"MIMALLOC","false","SOCKET_PROXY",183,308,128],["heap",128,"MIMALLOC","false","API_GATEWAY",262,1845,324],["heap",128,"MIMALLOC","true","SOCKET_PROXY",209,305,128],["heap",128,"MIMALLOC","true","API_GATEWAY",374,1818,356],["heap",1024,"POOLED","false","SOCKET_PROXY",510,557,256],["heap",1024,"POOLED","false","API_GATEWAY",484,1011,256],["heap",1024,"POOLED","true","SOCKET_PROXY",592,544,256],["heap",1024,"POOLED","true","API_GATEWAY",641,892,256],["heap",1024,"ADAPTIVE","false","SOCKET_PROXY",211,361,183],["heap",1024,"ADAPTIVE","false","API_GATEWAY",306,624,258],["heap",1024,"ADAPTIVE","true","SOCKET_PROXY",228,363,183],["heap",1024,"ADAPTIVE","true","API_GATEWAY",301,666,261],["heap",1024,"MIMALLOC","false","SOCKET_PROXY",224,460,256],["heap",1024,"MIMALLOC","false","API_GATEWAY",251,571,384],["heap",1024,"MIMALLOC","true","SOCKET_PROXY",253,458,256],["heap",1024,"MIMALLOC","true","API_GATEWAY",261,572,384],["heap",4096,"POOLED","false","SOCKET_PROXY",575,941,512],["heap",4096,"POOLED","false","API_GATEWAY",597,1877,768],["heap",4096,"POOLED","true","SOCKET_PROXY",843,891,512],["heap",4096,"POOLED","true","API_GATEWAY",770,1927,768],["heap",4096,"ADAPTIVE","false","SOCKET_PROXY",282,763,421],["heap",4096,"ADAPTIVE","false","API_GATEWAY",378,2278,669],["heap",4096,"ADAPTIVE","true","SOCKET_PROXY",345,743,423],["heap",4096,"ADAPTIVE","true","API_GATEWAY",489,2278,666],["heap",4096,"MIMALLOC","false","SOCKET_PROXY",261,839,640],["heap",4096,"MIMALLOC","false","API_GATEWAY",355,981,768],["heap",4096,"MIMALLOC","true","SOCKET_PROXY",317,852,640],["heap",4096,"MIMALLOC","true","API_GATEWAY",434,971,768],["heap",8192,"POOLED","false","SOCKET_PROXY",773,2086,896],["heap",8192,"POOLED","false","API_GATEWAY",732,2971,1408],["heap",8192,"POOLED","true","SOCKET_PROXY",916,2140,896],["heap",8192,"POOLED","true","API_GATEWAY",1338,2866,1408],["heap",8192,"ADAPTIVE","false","SOCKET_PROXY",281,1096,751],["heap",8192,"ADAPTIVE","false","API_GATEWAY",473,2819,1214],["heap",8192,"ADAPTIVE","true","SOCKET_PROXY",432,1070,743],["heap",8192,"ADAPTIVE","true","API_GATEWAY",718,2793,1192],["heap",8192,"MIMALLOC","false","SOCKET_PROXY",507,1946,1024],["heap",8192,"MIMALLOC","false","API_GATEWAY",672,1929,1280],["heap",8192,"MIMALLOC","true","SOCKET_PROXY",600,1933,1024],["heap",8192,"MIMALLOC","true","API_GATEWAY",729,1940,1280],["heap",16384,"POOLED","false","SOCKET_PROXY",852,3064,1792],["heap",16384,"POOLED","false","API_GATEWAY",944,3893,2432],["heap",16384,"POOLED","true","SOCKET_PROXY",994,3095,1792],["heap",16384,"POOLED","true","API_GATEWAY",1291,3887,2432],["heap",16384,"ADAPTIVE","false","SOCKET_PROXY",408,2300,1407],["heap",16384,"ADAPTIVE","false","API_GATEWAY",840,4036,2328],["heap",16384,"ADAPTIVE","true","SOCKET_PROXY",646,2269,1396],["heap",16384,"ADAPTIVE","true","API_GATEWAY",1268,4047,2332],["heap",16384,"MIMALLOC","false","SOCKET_PROXY",672,2762,1792],["heap",16384,"MIMALLOC","false","API_GATEWAY",791,2758,2304],["heap",16384,"MIMALLOC","true","SOCKET_PROXY",786,2785,1792],["heap",16384,"MIMALLOC","true","API_GATEWAY",887,2769,2304],["heap",32768,"POOLED","false","SOCKET_PROXY",1013,5159,3328],["heap",32768,"POOLED","false","API_GATEWAY",1141,6956,4608],["heap",32768,"POOLED","true","SOCKET_PROXY",1291,5070,3304],["heap",32768,"POOLED","true","API_GATEWAY",1443,6828,4608],["heap",32768,"ADAPTIVE","false","SOCKET_PROXY",531,3481,2716],["heap",32768,"ADAPTIVE","false","API_GATEWAY",1564,6358,4580],["heap",32768,"ADAPTIVE","true","SOCKET_PROXY",790,3372,2719],["heap",32768,"ADAPTIVE","true","API_GATEWAY",1853,6395,4571],["heap",32768,"MIMALLOC","false","SOCKET_PROXY",768,4388,3328],["heap",32768,"MIMALLOC","false","API_GATEWAY",995,5214,4096],["heap",32768,"MIMALLOC","true","SOCKET_PROXY",848,4387,3328],["heap",32768,"MIMALLOC","true","API_GATEWAY",1094,5169,4096],["heap",65536,"POOLED","false","SOCKET_PROXY",1929,9341,6272],["heap",65536,"POOLED","false","API_GATEWAY",2968,13000,8960],["heap",65536,"POOLED","true","SOCKET_PROXY",2172,9493,6272],["heap",65536,"POOLED","true","API_GATEWAY",2987,13040,8960],["heap",65536,"ADAPTIVE","false","SOCKET_PROXY",593,6528,5316],["heap",65536,"ADAPTIVE","false","API_GATEWAY",2406,10991,9068],["heap",65536,"ADAPTIVE","true","SOCKET_PROXY",906,6517,5309],["heap",65536,"ADAPTIVE","true","API_GATEWAY",2708,10984,9067],["heap",65536,"MIMALLOC","false","SOCKET_PROXY",879,7673,6400],["heap",65536,"MIMALLOC","false","API_GATEWAY",1113,8451,7808],["heap",65536,"MIMALLOC","true","SOCKET_PROXY",826,7672,6400],["heap",65536,"MIMALLOC","true","API_GATEWAY",1129,9202,7808]];
+
+const BUFS=[128,1024,4096,8192,16384,32768,65536];
+const AL=["POOLED","ADAPTIVE","MIMALLOC"];
+const CLR={"POOLED":"#4a7fcb","ADAPTIVE":"#2aaa6e","MIMALLOC":"#d05a2a"};
+let st={method:"direct",pattern:"SOCKET_PROXY",rw:"true"};
+let cL,cR,cNew;
+
+function rows(){return D.filter(r=>r[0]===st.method&&r[3]===st.rw&&r[4]===st.pattern);}
+function ds(col){
+  return AL.map(a=>{
+    const sub=rows().filter(r=>r[2]===a);
+    return{label:a,data:BUFS.map(b=>{const r=sub.find(x=>x[1]===b);return r?r[col]:null;}),
+      borderColor:CLR[a],backgroundColor:CLR[a]+"22",borderWidth:2,
+    };
+  });
+}
+function opts(ytitle){
+  return{responsive:true,maintainAspectRatio:false,animation:{duration:300},
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y!=null?Math.round(c.parsed.y):"n/a"}`}}},
+    scales:{x:{grid:{color:"rgba(128,128,128,.12)"},ticks:{font:{size:11}},title:{display:true,text:"Live buffers",font:{size:11}}},
+            y:{grid:{color:"rgba(128,128,128,.12)"},ticks:{font:{size:11}},title:{display:true,text:ytitle,font:{size:11}}}}};
+}
+function draw(){
+  const lData={labels:BUFS.map(String),datasets:ds(5)};
+  const rData={labels:BUFS.map(String),datasets:ds(6)};
+  const nData={labels:BUFS.map(String),datasets:ds(7)};
+  if(cL){cL.data=lData;cL.update();}
+  if(cR){cR.data=rData;cR.update();}
+  if(cNew){cNew.data=nData;cNew.update();} 
+}
+
+document.querySelectorAll(".pg").forEach(g=>{
+  g.addEventListener("click",e=>{
+    const b=e.target.closest(".pill");if(!b)return;
+    g.querySelectorAll(".pill").forEach(p=>p.classList.remove("on"));
+    b.classList.add("on");
+    const id=g.id;
+    if(id==="gm")st.method=b.dataset.v;
+    if(id==="gp")st.pattern=b.dataset.v;
+    if(id==="gr")st.rw=b.dataset.v;
+    draw();
+  });
+});
+
+function loadChartJS(cb){
+  const CDNS=[
+    "https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"
+  ];
+  let done=false;
+  CDNS.forEach(url=>{
+    const s=document.createElement("script");
+    s.src=url;
+    s.onload=()=>{ if(!done){ done=true; cb(); } };
+    document.head.appendChild(s);
+  });
+}
+loadChartJS(function(){
+  cL=new Chart(document.getElementById("cL"),{type:"line",data:{labels:BUFS.map(String),datasets:ds(5)},options:opts("ns/op")});
+  cR=new Chart(document.getElementById("cR"),{type:"line",data:{labels:BUFS.map(String),datasets:ds(6)},options:opts("MiB")});
+  cNew = new Chart(document.getElementById("cNew"), {
+      type: "line",
+      data: { labels: BUFS.map(String), datasets: ds(7) },
+      options: opts("MiB")
+    });
+  parent.postMessage("charts-ready", "*");
+});
+
+</script>
+</body></html>' style="display:none" frameborder="0"></iframe>
+  <iframe id="f1" data-srcdoc='<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;padding:0 12px;font-family:system-ui,sans-serif}</style></head><body>
+<style>
+.ctrl-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1rem;align-items:flex-end}
+
+.pg{display:flex;border:0.5px solid var(--color-border-secondary, #d1d5db);border-radius:20px;overflow:hidden}
+.pill{padding:5px 14px;font-size:13px;cursor:pointer;background:transparent;border:none;color:var(--color-text-secondary, #4b5563)}
+
+.pill.on{background:var(--color-text-primary, #111827);color:var(--color-background-primary, #ffffff)}
+.slabel{font-size:11px;font-weight:500;color:var(--color-text-tertiary, #6b7280);text-transform:uppercase;margin-bottom:5px}
+.chart-title{font-size:13px;font-weight:500;color:var(--color-text-secondary, #4b5563);margin:1rem 0 4px}
+.cw{position:relative;width:100%;height:260px}
+.leg{display:flex;gap:16px;font-size:12px;color:var(--color-text-secondary, #4b5563);margin-bottom:.5rem}
+.leg span{display:flex;align-items:center;gap:5px}
+.lsq{display:inline-block;width:20px;height:3px;border-radius:2px}
+.warn{background:var(--color-background-warning, #fef08a);border:0.5px solid var(--color-border-warning, #facc15);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--color-text-warning, #854d0e);margin-bottom:1rem;display:none}
+</style>
+
+<div style="padding:18px 0 0">
+<h4 class="sr-only">32 platform threads on x86 (AMD Ryzen 9 7950X) with 16 vCPUs</h4>
+<hr>
+<div class="ctrl-row">
+  <div><div class="slabel">allocation</div>
+    <div class="pg" id="gm">
+      <button class="pill on" data-v="direct">direct</button>
+      <button class="pill" data-v="heap">heap</button>
+    </div></div>
+  <div><div class="slabel">pattern</div>
+    <div class="pg" id="gp">
+      <button class="pill on" data-v="SOCKET_PROXY">SOCKET_PROXY</button>
+      <button class="pill" data-v="API_GATEWAY">API_GATEWAY</button>
+    </div></div>
+  <div><div class="slabel">read/write</div>
+    <div class="pg" id="gr">
+      <button class="pill on" data-v="true">on</button>
+      <button class="pill" data-v="false">off</button>
+    </div></div>
+</div>
+
+<div class="leg">
+  <span><span class="lsq" style="background:#4a7fcb"></span>POOLED</span>
+  <span><span class="lsq" style="background:#2aaa6e"></span>ADAPTIVE</span>
+  <span><span class="lsq" style="background:#d05a2a"></span>MIMALLOC</span>
+</div>
+
+<div class="chart-title">Latency (ns/op)&nbsp;&nbsp;<span style="font-weight:400;color:var(--color-text-tertiary)">the lower the better</span></div>
+<div class="cw"><canvas id="cL" role="img" aria-label="Allocation latency line chart"></canvas></div>
+
+<div class="chart-title">RSS (MiB)</div>
+<div class="cw"><canvas id="cR" role="img" aria-label="RSS memory line chart"></canvas></div>
+
+<div class="chart-title">allocator used memory (MiB)&nbsp;&nbsp;<span style="font-weight:400;color:var(--color-text-tertiary)">allocator.usedDirectMemory() or allocator.usedHeapMemory()</span></div>
+<div class="cw"><canvas id="cNew" role="img" aria-label="UsedMemory chart"></canvas></div>
+
+</div>
+
+<script>
+const D=[["direct",128,"POOLED","false","SOCKET_PROXY",612,15030,128],["direct",128,"POOLED","false","API_GATEWAY",544,15041,128],["direct",128,"POOLED","true","SOCKET_PROXY",491,15027,128],["direct",128,"POOLED","true","API_GATEWAY",575,15028,128],["direct",128,"ADAPTIVE","false","SOCKET_PROXY",331,300,112],["direct",128,"ADAPTIVE","false","API_GATEWAY",352,364,130],["direct",128,"ADAPTIVE","true","SOCKET_PROXY",321,290,106],["direct",128,"ADAPTIVE","true","API_GATEWAY",358,356,126],["direct",128,"MIMALLOC","false","SOCKET_PROXY",269,309,128],["direct",128,"MIMALLOC","false","API_GATEWAY",311,583,336],["direct",128,"MIMALLOC","true","SOCKET_PROXY",274,301,128],["direct",128,"MIMALLOC","true","API_GATEWAY",315,590,328],["direct",1024,"POOLED","false","SOCKET_PROXY",595,15156,256],["direct",1024,"POOLED","false","API_GATEWAY",612,15158,256],["direct",1024,"POOLED","true","SOCKET_PROXY",568,15164,256],["direct",1024,"POOLED","true","API_GATEWAY",637,15165,256],["direct",1024,"ADAPTIVE","false","SOCKET_PROXY",368,390,197],["direct",1024,"ADAPTIVE","false","API_GATEWAY",397,804,331],["direct",1024,"ADAPTIVE","true","SOCKET_PROXY",382,390,193],["direct",1024,"ADAPTIVE","true","API_GATEWAY",439,729,328],["direct",1024,"MIMALLOC","false","SOCKET_PROXY",272,440,256],["direct",1024,"MIMALLOC","false","API_GATEWAY",352,582,384],["direct",1024,"MIMALLOC","true","SOCKET_PROXY",335,435,256],["direct",1024,"MIMALLOC","true","API_GATEWAY",365,576,384],["direct",4096,"POOLED","false","SOCKET_PROXY",625,15434,512],["direct",4096,"POOLED","false","API_GATEWAY",732,15604,640],["direct",4096,"POOLED","true","SOCKET_PROXY",756,15429,512],["direct",4096,"POOLED","true","API_GATEWAY",867,15594,640],["direct",4096,"ADAPTIVE","false","SOCKET_PROXY",345,808,310],["direct",4096,"ADAPTIVE","false","API_GATEWAY",472,2346,782],["direct",4096,"ADAPTIVE","true","SOCKET_PROXY",439,774,308],["direct",4096,"ADAPTIVE","true","API_GATEWAY",677,2006,772],["direct",4096,"MIMALLOC","false","SOCKET_PROXY",367,822,628],["direct",4096,"MIMALLOC","false","API_GATEWAY",521,974,768],["direct",4096,"MIMALLOC","true","SOCKET_PROXY",377,815,624],["direct",4096,"MIMALLOC","true","API_GATEWAY",515,971,768],["direct",8192,"POOLED","false","SOCKET_PROXY",679,15976,880],["direct",8192,"POOLED","false","API_GATEWAY",794,16228,1196],["direct",8192,"POOLED","true","SOCKET_PROXY",866,15971,924],["direct",8192,"POOLED","true","API_GATEWAY",902,16247,1180],["direct",8192,"ADAPTIVE","false","SOCKET_PROXY",371,1115,753],["direct",8192,"ADAPTIVE","false","API_GATEWAY",753,3604,1162],["direct",8192,"ADAPTIVE","true","SOCKET_PROXY",530,1087,751],["direct",8192,"ADAPTIVE","true","API_GATEWAY",949,3265,1287],["direct",8192,"MIMALLOC","false","SOCKET_PROXY",479,1238,1024],["direct",8192,"MIMALLOC","false","API_GATEWAY",648,1491,1280],["direct",8192,"MIMALLOC","true","SOCKET_PROXY",506,1250,1024],["direct",8192,"MIMALLOC","true","API_GATEWAY",697,1494,1284],["direct",16384,"POOLED","false","SOCKET_PROXY",678,16787,1712],["direct",16384,"POOLED","false","API_GATEWAY",772,17250,2304],["direct",16384,"POOLED","true","SOCKET_PROXY",905,16776,1792],["direct",16384,"POOLED","true","API_GATEWAY",1061,17278,2304],["direct",16384,"ADAPTIVE","false","SOCKET_PROXY",396,1867,1374],["direct",16384,"ADAPTIVE","false","API_GATEWAY",1232,5598,2592],["direct",16384,"ADAPTIVE","true","SOCKET_PROXY",622,1787,1400],["direct",16384,"ADAPTIVE","true","API_GATEWAY",1530,5327,2538],["direct",16384,"MIMALLOC","false","SOCKET_PROXY",552,2034,1792],["direct",16384,"MIMALLOC","false","API_GATEWAY",729,2568,2328],["direct",16384,"MIMALLOC","true","SOCKET_PROXY",554,2039,1792],["direct",16384,"MIMALLOC","true","API_GATEWAY",810,2539,2296],["direct",32768,"POOLED","false","SOCKET_PROXY",734,18660,3584],["direct",32768,"POOLED","false","API_GATEWAY",993,19555,4480],["direct",32768,"POOLED","true","SOCKET_PROXY",1016,18651,3584],["direct",32768,"POOLED","true","API_GATEWAY",1311,19566,4480],["direct",32768,"ADAPTIVE","false","SOCKET_PROXY",584,4019,2873],["direct",32768,"ADAPTIVE","false","API_GATEWAY",2015,8310,5007],["direct",32768,"ADAPTIVE","true","SOCKET_PROXY",673,3118,2728],["direct",32768,"ADAPTIVE","true","API_GATEWAY",2304,7946,4989],["direct",32768,"MIMALLOC","false","SOCKET_PROXY",573,3615,3328],["direct",32768,"MIMALLOC","false","API_GATEWAY",809,4550,4244],["direct",32768,"MIMALLOC","true","SOCKET_PROXY",682,3737,3416],["direct",32768,"MIMALLOC","true","API_GATEWAY",868,4539,4228],["direct",65536,"POOLED","false","SOCKET_PROXY",810,22777,6136],["direct",65536,"POOLED","false","API_GATEWAY",1002,24776,8704],["direct",65536,"POOLED","true","SOCKET_PROXY",1228,22761,6784],["direct",65536,"POOLED","true","API_GATEWAY",1490,24693,8704],["direct",65536,"ADAPTIVE","false","SOCKET_PROXY",517,6258,5332],["direct",65536,"ADAPTIVE","false","API_GATEWAY",3052,13212,9608],["direct",65536,"ADAPTIVE","true","SOCKET_PROXY",757,5968,5320],["direct",65536,"ADAPTIVE","true","API_GATEWAY",3425,12674,9551],["direct",65536,"MIMALLOC","false","SOCKET_PROXY",625,6747,6360],["direct",65536,"MIMALLOC","false","API_GATEWAY",873,8617,8172],["direct",65536,"MIMALLOC","true","SOCKET_PROXY",687,6777,6380],["direct",65536,"MIMALLOC","true","API_GATEWAY",902,8184,7808],["heap",128,"POOLED","false","SOCKET_PROXY",618,15144,128],["heap",128,"POOLED","false","API_GATEWAY",601,15151,128],["heap",128,"POOLED","true","SOCKET_PROXY",530,15149,128],["heap",128,"POOLED","true","API_GATEWAY",743,15148,128],["heap",128,"ADAPTIVE","false","SOCKET_PROXY",304,289,107],["heap",128,"ADAPTIVE","false","API_GATEWAY",368,367,129],["heap",128,"ADAPTIVE","true","SOCKET_PROXY",285,285,105],["heap",128,"ADAPTIVE","true","API_GATEWAY",374,388,129],["heap",128,"MIMALLOC","false","SOCKET_PROXY",262,308,128],["heap",128,"MIMALLOC","false","API_GATEWAY",685,1629,340],["heap",128,"MIMALLOC","true","SOCKET_PROXY",301,308,128],["heap",128,"MIMALLOC","true","API_GATEWAY",408,1684,336],["heap",1024,"POOLED","false","SOCKET_PROXY",567,15335,256],["heap",1024,"POOLED","false","API_GATEWAY",670,15350,256],["heap",1024,"POOLED","true","SOCKET_PROXY",613,15292,256],["heap",1024,"POOLED","true","API_GATEWAY",708,15339,256],["heap",1024,"ADAPTIVE","false","SOCKET_PROXY",357,387,199],["heap",1024,"ADAPTIVE","false","API_GATEWAY",440,720,327],["heap",1024,"ADAPTIVE","true","SOCKET_PROXY",343,370,183],["heap",1024,"ADAPTIVE","true","API_GATEWAY",511,731,324],["heap",1024,"MIMALLOC","false","SOCKET_PROXY",290,432,256],["heap",1024,"MIMALLOC","false","API_GATEWAY",378,582,384],["heap",1024,"MIMALLOC","true","SOCKET_PROXY",289,446,256],["heap",1024,"MIMALLOC","true","API_GATEWAY",341,577,384],["heap",4096,"POOLED","false","SOCKET_PROXY",606,15561,512],["heap",4096,"POOLED","false","API_GATEWAY",810,15725,640],["heap",4096,"POOLED","true","SOCKET_PROXY",833,15570,512],["heap",4096,"POOLED","true","API_GATEWAY",901,15754,640],["heap",4096,"ADAPTIVE","false","SOCKET_PROXY",398,771,370],["heap",4096,"ADAPTIVE","false","API_GATEWAY",545,2754,788],["heap",4096,"ADAPTIVE","true","SOCKET_PROXY",412,762,407],["heap",4096,"ADAPTIVE","true","API_GATEWAY",667,2679,781],["heap",4096,"MIMALLOC","false","SOCKET_PROXY",348,849,636],["heap",4096,"MIMALLOC","false","API_GATEWAY",478,971,768],["heap",4096,"MIMALLOC","true","SOCKET_PROXY",362,837,632],["heap",4096,"MIMALLOC","true","API_GATEWAY",568,977,768],["heap",8192,"POOLED","false","SOCKET_PROXY",742,16277,896],["heap",8192,"POOLED","false","API_GATEWAY",819,16498,1188],["heap",8192,"POOLED","true","SOCKET_PROXY",1093,16215,992],["heap",8192,"POOLED","true","API_GATEWAY",960,16436,1204],["heap",8192,"ADAPTIVE","false","SOCKET_PROXY",359,1107,749],["heap",8192,"ADAPTIVE","false","API_GATEWAY",640,12234,1339],["heap",8192,"ADAPTIVE","true","SOCKET_PROXY",538,1072,745],["heap",8192,"ADAPTIVE","true","API_GATEWAY",998,5480,1298],["heap",8192,"MIMALLOC","false","SOCKET_PROXY",588,1920,1024],["heap",8192,"MIMALLOC","false","API_GATEWAY",875,1932,1292],["heap",8192,"MIMALLOC","true","SOCKET_PROXY",706,1937,1024],["heap",8192,"MIMALLOC","true","API_GATEWAY",896,1933,1280],["heap",16384,"POOLED","false","SOCKET_PROXY",857,17131,1792],["heap",16384,"POOLED","false","API_GATEWAY",874,17760,2304],["heap",16384,"POOLED","true","SOCKET_PROXY",912,17095,1792],["heap",16384,"POOLED","true","API_GATEWAY",1113,17707,2304],["heap",16384,"ADAPTIVE","false","SOCKET_PROXY",519,2240,1416],["heap",16384,"ADAPTIVE","false","API_GATEWAY",1446,21993,2604],["heap",16384,"ADAPTIVE","true","SOCKET_PROXY",858,2295,1403],["heap",16384,"ADAPTIVE","true","API_GATEWAY",1792,18005,2541],["heap",16384,"MIMALLOC","false","SOCKET_PROXY",811,2768,1832],["heap",16384,"MIMALLOC","false","API_GATEWAY",938,2763,2296],["heap",16384,"MIMALLOC","true","SOCKET_PROXY",793,2763,1792],["heap",16384,"MIMALLOC","true","API_GATEWAY",1095,2762,2296],["heap",32768,"POOLED","false","SOCKET_PROXY",807,19433,3584],["heap",32768,"POOLED","false","API_GATEWAY",885,20749,4480],["heap",32768,"POOLED","true","SOCKET_PROXY",1251,19340,3584],["heap",32768,"POOLED","true","API_GATEWAY",1401,20695,4480],["heap",32768,"ADAPTIVE","false","SOCKET_PROXY",520,3394,2725],["heap",32768,"ADAPTIVE","false","API_GATEWAY",2670,22866,5054],["heap",32768,"ADAPTIVE","true","SOCKET_PROXY",891,3430,2724],["heap",32768,"ADAPTIVE","true","API_GATEWAY",2968,21692,5111],["heap",32768,"MIMALLOC","false","SOCKET_PROXY",886,4395,3328],["heap",32768,"MIMALLOC","false","API_GATEWAY",1109,5150,4096],["heap",32768,"MIMALLOC","true","SOCKET_PROXY",942,4411,3328],["heap",32768,"MIMALLOC","true","API_GATEWAY",1236,5173,4100],["heap",65536,"POOLED","false","SOCKET_PROXY",874,23102,6784],["heap",65536,"POOLED","false","API_GATEWAY",1463,23091,8704],["heap",65536,"POOLED","true","SOCKET_PROXY",1249,23061,6496],["heap",65536,"POOLED","true","API_GATEWAY",1560,22417,8704],["heap",65536,"ADAPTIVE","false","SOCKET_PROXY",835,6557,2249],["heap",65536,"ADAPTIVE","false","API_GATEWAY",5202,24925,9633],["heap",65536,"ADAPTIVE","true","SOCKET_PROXY",1200,6545,5316],["heap",65536,"ADAPTIVE","true","API_GATEWAY",5455,24209,9607],["heap",65536,"MIMALLOC","false","SOCKET_PROXY",1065,7680,6344],["heap",65536,"MIMALLOC","false","API_GATEWAY",1335,8420,5772],["heap",65536,"MIMALLOC","true","SOCKET_PROXY",1025,7665,6364],["heap",65536,"MIMALLOC","true","API_GATEWAY",1163,8424,7812]];
+
+const BUFS=[128,1024,4096,8192,16384,32768,65536];
+const AL=["POOLED","ADAPTIVE","MIMALLOC"];
+const CLR={"POOLED":"#4a7fcb","ADAPTIVE":"#2aaa6e","MIMALLOC":"#d05a2a"};
+let st={method:"direct",pattern:"SOCKET_PROXY",rw:"true"};
+let cL,cR,cNew;
+
+function rows(){return D.filter(r=>r[0]===st.method&&r[3]===st.rw&&r[4]===st.pattern);}
+function ds(col){
+  return AL.map(a=>{
+    const sub=rows().filter(r=>r[2]===a);
+    return{label:a,data:BUFS.map(b=>{const r=sub.find(x=>x[1]===b);return r?r[col]:null;}),
+      borderColor:CLR[a],backgroundColor:CLR[a]+"22",borderWidth:2,
+    };
+  });
+}
+function opts(ytitle){
+  return{responsive:true,maintainAspectRatio:false,animation:{duration:300},
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y!=null?Math.round(c.parsed.y):"n/a"}`}}},
+    scales:{x:{grid:{color:"rgba(128,128,128,.12)"},ticks:{font:{size:11}},title:{display:true,text:"Live buffers",font:{size:11}}},
+            y:{grid:{color:"rgba(128,128,128,.12)"},ticks:{font:{size:11}},title:{display:true,text:ytitle,font:{size:11}}}}};
+}
+function draw(){
+  const lData={labels:BUFS.map(String),datasets:ds(5)};
+  const rData={labels:BUFS.map(String),datasets:ds(6)};
+  const nData={labels:BUFS.map(String),datasets:ds(7)};
+  if(cL){cL.data=lData;cL.update();}
+  if(cR){cR.data=rData;cR.update();}
+  if(cNew){cNew.data=nData;cNew.update();} 
+}
+
+document.querySelectorAll(".pg").forEach(g=>{
+  g.addEventListener("click",e=>{
+    const b=e.target.closest(".pill");if(!b)return;
+    g.querySelectorAll(".pill").forEach(p=>p.classList.remove("on"));
+    b.classList.add("on");
+    const id=g.id;
+    if(id==="gm")st.method=b.dataset.v;
+    if(id==="gp")st.pattern=b.dataset.v;
+    if(id==="gr")st.rw=b.dataset.v;
+    draw();
+  });
+});
+
+function loadChartJS(cb){
+  const CDNS=[
+    "https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"
+  ];
+  let done=false;
+  CDNS.forEach(url=>{
+    const s=document.createElement("script");
+    s.src=url;
+    s.onload=()=>{ if(!done){ done=true; cb(); } };
+    document.head.appendChild(s);
+  });
+}
+loadChartJS(function(){
+  cL=new Chart(document.getElementById("cL"),{type:"line",data:{labels:BUFS.map(String),datasets:ds(5)},options:opts("ns/op")});
+  cR=new Chart(document.getElementById("cR"),{type:"line",data:{labels:BUFS.map(String),datasets:ds(6)},options:opts("MiB")});
+  cNew = new Chart(document.getElementById("cNew"), {
+      type: "line",
+      data: { labels: BUFS.map(String), datasets: ds(7) },
+      options: opts("MiB")
+    });
+  if (window.parent) parent.postMessage("charts-ready", "*");
+});
+</script>
+</body></html>' style="display:none" frameborder="0"></iframe>
+</main>
+
+<script>
+const btns = document.querySelectorAll(".nav-btn");
+const frames = document.querySelectorAll("iframe");
+
+function show(btn, i) {
+  btns.forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  frames.forEach((f, j) => {
+    if (j === i) {
+      if (!f.srcdoc) f.srcdoc = f.dataset.srcdoc;
+      f.style.display = "block";
+    } else {
+      f.style.display = "none";
+    }
+  });
+}
+
+window.addEventListener('message', e => {
+  if (e.data === 'charts-ready') {
+    const el = document.getElementById('loading');
+    el.style.opacity = '0';
+    el.style.transition = 'opacity .3s';
+    setTimeout(() => el.remove(), 300);
+  }
+});
+
+// click first button on laod.
+btns[0].click();
+</script>
+</body>
+</html>
