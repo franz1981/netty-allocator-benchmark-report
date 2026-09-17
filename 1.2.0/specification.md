@@ -155,7 +155,6 @@ Vulnerabilities:
 
 #### 10. Max live buffers per thread: 
 - `MAX_LIVE_BUFFERS`: [128, 1024, 4096, 8192, 16384, 32768, 65536].
-- Allocations on platform threads skipped `65536`, as the pooled allocator threw `OOM` when `MAX_LIVE_BUFFERS` reached `65536` with heap allocations.
 
 #### 11. Switch on read-write: 
 - `enableReadWrite`: if true, enables read and write on each buffer to simulate real-world usage.
