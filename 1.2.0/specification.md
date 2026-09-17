@@ -150,8 +150,8 @@ Vulnerabilities:
 - [ByteBufAllocatorAllocPatternBenchmark.java](https://raw.githubusercontent.com/laosijikaichele/garage/refs/heads/main/bench/m/260916/ByteBufAllocatorAllocPatternBenchmark.java).
 
 #### 9. Code base:
-- Netty-4.2.17.Final-SNAPSHOT, which compiled based on https://github.com/franz1981/netty/tree/58005864c969f8ddddd98ef634891f4e30dae039.
-- Mimalloc-netty-allocator: [1.2.0.Final](https://github.com/neoionet/netty-allocator/tree/9de9d9187ea75eea9869ce6b253b6a9a988d2bd2).
+- Netty-4.2.17.Final-SNAPSHOT, which compiled based on [commit](https://github.com/franz1981/netty/tree/58005864c969f8ddddd98ef634891f4e30dae039) from @franz1981.
+- Mimalloc-netty-allocator: [netty-allocator-1.2.0.Final](https://github.com/neoionet/netty-allocator/tree/9de9d9187ea75eea9869ce6b253b6a9a988d2bd2).
 
 #### 10. Max live buffers per thread: 
 - `MAX_LIVE_BUFFERS`: [128, 1024, 4096, 8192, 16384, 32768, 65536].
