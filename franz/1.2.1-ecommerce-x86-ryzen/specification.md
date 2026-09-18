@@ -8,6 +8,7 @@ Re-run of [lao's 1.2.1 E_COMMERCE benchmark](https://github.com/netty/netty/disc
 #### Series
 - `ADAPTIVE #17151`: [franz1981/netty@5800586](https://github.com/franz1981/netty/tree/58005864c969f8ddddd98ef634891f4e30dae039).
 - `ADAPTIVE + size classes`: the same plus [one commit](https://github.com/franz1981/netty/commit/4c1621ed58) adding size classes up to 128 KiB (branch [4.2_striped_heap_size_classes](https://github.com/franz1981/netty/tree/4.2_striped_heap_size_classes)).
+- `ADAPTIVE + buddy cache per stripe`: #17151 plus [one commit](https://github.com/franz1981/netty/commit/ace828506f) giving each stripe its own buddy chunk cache (branch [4.2_striped_heap_buddy_cache_per_stripe](https://github.com/franz1981/netty/tree/4.2_striped_heap_buddy_cache_per_stripe)); 16 size classes as in #17151. Benchmarked build: the one-line variant of that change (the pushed commit also drops the then-unused shared field).
 - `MIMALLOC 1.2.1`: [neoionet/netty-allocator@397e933](https://github.com/neoionet/netty-allocator/tree/397e93304a5f17fe1361c3e56e72526088786f35).
 
 #### Data and benchmark code

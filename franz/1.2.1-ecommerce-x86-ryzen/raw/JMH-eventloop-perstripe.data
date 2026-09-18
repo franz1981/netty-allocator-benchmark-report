@@ -1,0 +1,661 @@
+# JMH version: 1.37
+# VM version: JDK 21, Java HotSpot(TM) 64-Bit Server VM, 21+35-LTS-2513
+# VM invoker: /home/forked_franz/.sdkman/candidates/java/21-oracle/bin/java
+# VM options: -server -dsa -da -XX:InitialRAMPercentage=40.0 -XX:MaxRAMPercentage=40.0 -Dio.netty.leakDetection.level=disabled -Djmh.executor=CUSTOM -Djmh.executor.class=io.github.neoionet.netty.microbenchmark.executor.FastThreadLocalThreadHarnessExecutor -XX:MaxRAM=60g
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 10 iterations, 1 s each
+# Measurement: 10 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 32 threads, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: io.github.neoionet.netty.microbenchmark.ByteBufAllocatorAllocPatternBenchmark.directAllocation
+# Parameters: (MAX_LIVE_BUFFERS = 128, allocatorType = ADAPTIVE, enableReadWrite = true, sizePattern = E_COMMERCE)
+
+# Run progress: 0.00% complete, ETA 00:04:40
+# Fork: 1 of 1
+# Warmup Iteration   1: 436.654 ±(99.9%) 60.522 ns/op
+# Warmup Iteration   2: 387.018 ±(99.9%) 86.251 ns/op
+# Warmup Iteration   3: 290.156 ±(99.9%) 63.972 ns/op
+# Warmup Iteration   4: 329.094 ±(99.9%) 116.854 ns/op
+# Warmup Iteration   5: 279.903 ±(99.9%) 47.146 ns/op
+# Warmup Iteration   6: 281.602 ±(99.9%) 52.958 ns/op
+# Warmup Iteration   7: 267.727 ±(99.9%) 40.673 ns/op
+# Warmup Iteration   8: 265.963 ±(99.9%) 33.950 ns/op
+# Warmup Iteration   9: 278.701 ±(99.9%) 52.148 ns/op
+# Warmup Iteration  10: 296.071 ±(99.9%) 72.020 ns/op
+Iteration   1: 281.588 ±(99.9%) 59.354 ns/op
+Iteration   2: 305.042 ±(99.9%) 73.278 ns/op
+Iteration   3: 277.026 ±(99.9%) 35.519 ns/op
+Iteration   4: 286.454 ±(99.9%) 50.767 ns/op
+Iteration   5: 312.170 ±(99.9%) 70.298 ns/op
+Iteration   6: 292.621 ±(99.9%) 60.521 ns/op
+Iteration   7: 307.456 ±(99.9%) 69.752 ns/op
+Iteration   8: 286.835 ±(99.9%) 40.206 ns/op
+Iteration   9: 312.445 ±(99.9%) 82.907 ns/op
+Iteration  10: cRSS-pRSS:[1893, 1893]
+;used-memory:[187]
+316.443 ±(99.9%) 89.009 ns/op
+
+
+Result "io.github.neoionet.netty.microbenchmark.ByteBufAllocatorAllocPatternBenchmark.directAllocation":
+  297.808 ±(99.9%) 21.877 ns/op [Average]
+  (min, avg, max) = (277.026, 297.808, 316.443), stdev = 14.470
+  CI (99.9%): [275.931, 319.684] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21, Java HotSpot(TM) 64-Bit Server VM, 21+35-LTS-2513
+# VM invoker: /home/forked_franz/.sdkman/candidates/java/21-oracle/bin/java
+# VM options: -server -dsa -da -XX:InitialRAMPercentage=40.0 -XX:MaxRAMPercentage=40.0 -Dio.netty.leakDetection.level=disabled -Djmh.executor=CUSTOM -Djmh.executor.class=io.github.neoionet.netty.microbenchmark.executor.FastThreadLocalThreadHarnessExecutor -XX:MaxRAM=60g
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 10 iterations, 1 s each
+# Measurement: 10 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 32 threads, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: io.github.neoionet.netty.microbenchmark.ByteBufAllocatorAllocPatternBenchmark.directAllocation
+# Parameters: (MAX_LIVE_BUFFERS = 1024, allocatorType = ADAPTIVE, enableReadWrite = true, sizePattern = E_COMMERCE)
+
+# Run progress: 7.14% complete, ETA 00:05:09
+# Fork: 1 of 1
+# Warmup Iteration   1: 559.136 ±(99.9%) 60.658 ns/op
+# Warmup Iteration   2: 341.104 ±(99.9%) 51.988 ns/op
+# Warmup Iteration   3: 354.160 ±(99.9%) 71.522 ns/op
+# Warmup Iteration   4: 333.520 ±(99.9%) 48.000 ns/op
+# Warmup Iteration   5: 364.741 ±(99.9%) 83.027 ns/op
+# Warmup Iteration   6: 377.348 ±(99.9%) 96.410 ns/op
+# Warmup Iteration   7: 337.531 ±(99.9%) 53.735 ns/op
+# Warmup Iteration   8: 339.514 ±(99.9%) 54.456 ns/op
+# Warmup Iteration   9: 335.805 ±(99.9%) 48.271 ns/op
+# Warmup Iteration  10: 356.374 ±(99.9%) 76.830 ns/op
+Iteration   1: 383.588 ±(99.9%) 110.935 ns/op
+Iteration   2: 336.145 ±(99.9%) 48.814 ns/op
+Iteration   3: 333.967 ±(99.9%) 47.218 ns/op
+Iteration   4: 353.417 ±(99.9%) 63.189 ns/op
+Iteration   5: 342.983 ±(99.9%) 55.742 ns/op
+Iteration   6: 345.024 ±(99.9%) 56.638 ns/op
+Iteration   7: 342.911 ±(99.9%) 57.266 ns/op
+Iteration   8: 374.716 ±(99.9%) 87.782 ns/op
+Iteration   9: 360.911 ±(99.9%) 78.989 ns/op
+Iteration  10: cRSS-pRSS:[2312, 2312]
+;used-memory:[450]
+384.059 ±(99.9%) 101.469 ns/op
+
+
+Result "io.github.neoionet.netty.microbenchmark.ByteBufAllocatorAllocPatternBenchmark.directAllocation":
+  355.772 ±(99.9%) 28.818 ns/op [Average]
+  (min, avg, max) = (333.967, 355.772, 384.059), stdev = 19.061
+  CI (99.9%): [326.955, 384.590] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21, Java HotSpot(TM) 64-Bit Server VM, 21+35-LTS-2513
+# VM invoker: /home/forked_franz/.sdkman/candidates/java/21-oracle/bin/java
+# VM options: -server -dsa -da -XX:InitialRAMPercentage=40.0 -XX:MaxRAMPercentage=40.0 -Dio.netty.leakDetection.level=disabled -Djmh.executor=CUSTOM -Djmh.executor.class=io.github.neoionet.netty.microbenchmark.executor.FastThreadLocalThreadHarnessExecutor -XX:MaxRAM=60g
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 10 iterations, 1 s each
+# Measurement: 10 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 32 threads, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: io.github.neoionet.netty.microbenchmark.ByteBufAllocatorAllocPatternBenchmark.directAllocation
+# Parameters: (MAX_LIVE_BUFFERS = 4096, allocatorType = ADAPTIVE, enableReadWrite = true, sizePattern = E_COMMERCE)
+
+# Run progress: 14.29% complete, ETA 00:04:45
+# Fork: 1 of 1
+# Warmup Iteration   1: 662.692 ±(99.9%) 56.131 ns/op
+# Warmup Iteration   2: 596.920 ±(99.9%) 74.506 ns/op
+# Warmup Iteration   3: 399.309 ±(99.9%) 75.778 ns/op
+# Warmup Iteration   4: 390.317 ±(99.9%) 70.973 ns/op
+# Warmup Iteration   5: 389.200 ±(99.9%) 70.265 ns/op
+# Warmup Iteration   6: 371.458 ±(99.9%) 55.945 ns/op
+# Warmup Iteration   7: 393.695 ±(99.9%) 101.057 ns/op
+# Warmup Iteration   8: 398.005 ±(99.9%) 101.231 ns/op
+# Warmup Iteration   9: 384.897 ±(99.9%) 72.513 ns/op
+# Warmup Iteration  10: 427.719 ±(99.9%) 131.960 ns/op
+Iteration   1: 372.118 ±(99.9%) 58.622 ns/op
+Iteration   2: 366.010 ±(99.9%) 44.389 ns/op
+Iteration   3: 387.192 ±(99.9%) 62.453 ns/op
+Iteration   4: 407.015 ±(99.9%) 89.937 ns/op
+Iteration   5: 397.178 ±(99.9%) 81.617 ns/op
+Iteration   6: 381.468 ±(99.9%) 61.499 ns/op
+Iteration   7: 405.596 ±(99.9%) 100.384 ns/op
+Iteration   8: 428.236 ±(99.9%) 123.990 ns/op
+Iteration   9: 411.777 ±(99.9%) 101.091 ns/op
+Iteration  10: cRSS-pRSS:[3167, 3167]
+;used-memory:[1076]
+411.793 ±(99.9%) 91.827 ns/op
+
+
+Result "io.github.neoionet.netty.microbenchmark.ByteBufAllocatorAllocPatternBenchmark.directAllocation":
+  396.838 ±(99.9%) 29.830 ns/op [Average]
+  (min, avg, max) = (366.010, 396.838, 428.236), stdev = 19.731
+  CI (99.9%): [367.008, 426.668] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21, Java HotSpot(TM) 64-Bit Server VM, 21+35-LTS-2513
+# VM invoker: /home/forked_franz/.sdkman/candidates/java/21-oracle/bin/java
+# VM options: -server -dsa -da -XX:InitialRAMPercentage=40.0 -XX:MaxRAMPercentage=40.0 -Dio.netty.leakDetection.level=disabled -Djmh.executor=CUSTOM -Djmh.executor.class=io.github.neoionet.netty.microbenchmark.executor.FastThreadLocalThreadHarnessExecutor -XX:MaxRAM=60g
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 10 iterations, 1 s each
+# Measurement: 10 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 32 threads, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: io.github.neoionet.netty.microbenchmark.ByteBufAllocatorAllocPatternBenchmark.directAllocation
+# Parameters: (MAX_LIVE_BUFFERS = 8192, allocatorType = ADAPTIVE, enableReadWrite = true, sizePattern = E_COMMERCE)
+
+# Run progress: 21.43% complete, ETA 00:04:22
+# Fork: 1 of 1
+# Warmup Iteration   1: 994.311 ±(99.9%) 195.357 ns/op
+# Warmup Iteration   2: 678.280 ±(99.9%) 165.897 ns/op
+# Warmup Iteration   3: 607.853 ±(99.9%) 106.612 ns/op
+# Warmup Iteration   4: 656.574 ±(99.9%) 176.675 ns/op
+# Warmup Iteration   5: 758.072 ±(99.9%) 268.820 ns/op
+# Warmup Iteration   6: 632.282 ±(99.9%) 167.727 ns/op
+# Warmup Iteration   7: 653.911 ±(99.9%) 182.895 ns/op
+# Warmup Iteration   8: 765.527 ±(99.9%) 290.465 ns/op
+# Warmup Iteration   9: 586.294 ±(99.9%) 127.686 ns/op
+# Warmup Iteration  10: 660.013 ±(99.9%) 209.360 ns/op
+Iteration   1: 664.252 ±(99.9%) 190.767 ns/op
+Iteration   2: 600.865 ±(99.9%) 133.458 ns/op
+Iteration   3: 631.633 ±(99.9%) 163.118 ns/op
+Iteration   4: 600.348 ±(99.9%) 113.568 ns/op
+Iteration   5: 635.008 ±(99.9%) 173.437 ns/op
+Iteration   6: 661.473 ±(99.9%) 202.521 ns/op
+Iteration   7: 690.927 ±(99.9%) 201.538 ns/op
+Iteration   8: 609.905 ±(99.9%) 139.962 ns/op
+Iteration   9: 596.670 ±(99.9%) 120.190 ns/op
+Iteration  10: cRSS-pRSS:[3803, 3803]
+;used-memory:[1700]
+623.848 ±(99.9%) 157.126 ns/op
+
+
+Result "io.github.neoionet.netty.microbenchmark.ByteBufAllocatorAllocPatternBenchmark.directAllocation":
+  631.493 ±(99.9%) 48.237 ns/op [Average]
+  (min, avg, max) = (596.670, 631.493, 690.927), stdev = 31.906
+  CI (99.9%): [583.256, 679.730] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21, Java HotSpot(TM) 64-Bit Server VM, 21+35-LTS-2513
+# VM invoker: /home/forked_franz/.sdkman/candidates/java/21-oracle/bin/java
+# VM options: -server -dsa -da -XX:InitialRAMPercentage=40.0 -XX:MaxRAMPercentage=40.0 -Dio.netty.leakDetection.level=disabled -Djmh.executor=CUSTOM -Djmh.executor.class=io.github.neoionet.netty.microbenchmark.executor.FastThreadLocalThreadHarnessExecutor -XX:MaxRAM=60g
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 10 iterations, 1 s each
+# Measurement: 10 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 32 threads, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: io.github.neoionet.netty.microbenchmark.ByteBufAllocatorAllocPatternBenchmark.directAllocation
+# Parameters: (MAX_LIVE_BUFFERS = 16384, allocatorType = ADAPTIVE, enableReadWrite = true, sizePattern = E_COMMERCE)
+
+# Run progress: 28.57% complete, ETA 00:03:58
+# Fork: 1 of 1
+# Warmup Iteration   1: 2233.716 ±(99.9%) 210.333 ns/op
+# Warmup Iteration   2: 829.173 ±(99.9%) 160.072 ns/op
+# Warmup Iteration   3: 860.959 ±(99.9%) 234.396 ns/op
+# Warmup Iteration   4: 898.220 ±(99.9%) 207.838 ns/op
+# Warmup Iteration   5: 832.024 ±(99.9%) 176.467 ns/op
+# Warmup Iteration   6: 898.789 ±(99.9%) 262.655 ns/op
+# Warmup Iteration   7: 829.064 ±(99.9%) 139.147 ns/op
+# Warmup Iteration   8: 850.956 ±(99.9%) 202.142 ns/op
+# Warmup Iteration   9: 806.336 ±(99.9%) 129.166 ns/op
+# Warmup Iteration  10: 845.470 ±(99.9%) 213.275 ns/op
+Iteration   1: 818.801 ±(99.9%) 139.350 ns/op
+Iteration   2: 839.970 ±(99.9%) 187.851 ns/op
+Iteration   3: 858.457 ±(99.9%) 220.073 ns/op
+Iteration   4: 819.227 ±(99.9%) 170.105 ns/op
+Iteration   5: 836.500 ±(99.9%) 162.009 ns/op
+Iteration   6: 846.890 ±(99.9%) 186.283 ns/op
+Iteration   7: 825.659 ±(99.9%) 169.003 ns/op
+Iteration   8: 883.519 ±(99.9%) 253.208 ns/op
+Iteration   9: 866.985 ±(99.9%) 224.516 ns/op
+Iteration  10: cRSS-pRSS:[5390, 5390]
+;used-memory:[3070]
+918.500 ±(99.9%) 279.132 ns/op
+
+
+Result "io.github.neoionet.netty.microbenchmark.ByteBufAllocatorAllocPatternBenchmark.directAllocation":
+  851.451 ±(99.9%) 47.703 ns/op [Average]
+  (min, avg, max) = (818.801, 851.451, 918.500), stdev = 31.553
+  CI (99.9%): [803.748, 899.154] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21, Java HotSpot(TM) 64-Bit Server VM, 21+35-LTS-2513
+# VM invoker: /home/forked_franz/.sdkman/candidates/java/21-oracle/bin/java
+# VM options: -server -dsa -da -XX:InitialRAMPercentage=40.0 -XX:MaxRAMPercentage=40.0 -Dio.netty.leakDetection.level=disabled -Djmh.executor=CUSTOM -Djmh.executor.class=io.github.neoionet.netty.microbenchmark.executor.FastThreadLocalThreadHarnessExecutor -XX:MaxRAM=60g
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 10 iterations, 1 s each
+# Measurement: 10 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 32 threads, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: io.github.neoionet.netty.microbenchmark.ByteBufAllocatorAllocPatternBenchmark.directAllocation
+# Parameters: (MAX_LIVE_BUFFERS = 32768, allocatorType = ADAPTIVE, enableReadWrite = true, sizePattern = E_COMMERCE)
+
+# Run progress: 35.71% complete, ETA 00:03:35
+# Fork: 1 of 1
+# Warmup Iteration   1: 7319.444 ±(99.9%) 991.531 ns/op
+# Warmup Iteration   2: 972.387 ±(99.9%) 121.933 ns/op
+# Warmup Iteration   3: 907.492 ±(99.9%) 107.107 ns/op
+# Warmup Iteration   4: 1104.302 ±(99.9%) 280.216 ns/op
+# Warmup Iteration   5: 1193.854 ±(99.9%) 341.362 ns/op
+# Warmup Iteration   6: 1001.711 ±(99.9%) 159.090 ns/op
+# Warmup Iteration   7: 1114.362 ±(99.9%) 291.594 ns/op
+# Warmup Iteration   8: 1094.113 ±(99.9%) 293.497 ns/op
+# Warmup Iteration   9: 999.487 ±(99.9%) 167.991 ns/op
+# Warmup Iteration  10: 1059.051 ±(99.9%) 251.804 ns/op
+Iteration   1: 1014.627 ±(99.9%) 179.871 ns/op
+Iteration   2: 1001.338 ±(99.9%) 170.020 ns/op
+Iteration   3: 1000.946 ±(99.9%) 168.686 ns/op
+Iteration   4: 1048.125 ±(99.9%) 247.935 ns/op
+Iteration   5: 1095.146 ±(99.9%) 335.953 ns/op
+Iteration   6: 1038.900 ±(99.9%) 215.547 ns/op
+Iteration   7: 1018.446 ±(99.9%) 193.708 ns/op
+Iteration   8: 1034.012 ±(99.9%) 209.966 ns/op
+Iteration   9: 1079.843 ±(99.9%) 242.884 ns/op
+Iteration  10: cRSS-pRSS:[8291, 8301]
+;used-memory:[5369]
+1023.345 ±(99.9%) 237.793 ns/op
+
+
+Result "io.github.neoionet.netty.microbenchmark.ByteBufAllocatorAllocPatternBenchmark.directAllocation":
+  1035.473 ±(99.9%) 47.629 ns/op [Average]
+  (min, avg, max) = (1000.946, 1035.473, 1095.146), stdev = 31.504
+  CI (99.9%): [987.844, 1083.102] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21, Java HotSpot(TM) 64-Bit Server VM, 21+35-LTS-2513
+# VM invoker: /home/forked_franz/.sdkman/candidates/java/21-oracle/bin/java
+# VM options: -server -dsa -da -XX:InitialRAMPercentage=40.0 -XX:MaxRAMPercentage=40.0 -Dio.netty.leakDetection.level=disabled -Djmh.executor=CUSTOM -Djmh.executor.class=io.github.neoionet.netty.microbenchmark.executor.FastThreadLocalThreadHarnessExecutor -XX:MaxRAM=60g
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 10 iterations, 1 s each
+# Measurement: 10 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 32 threads, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: io.github.neoionet.netty.microbenchmark.ByteBufAllocatorAllocPatternBenchmark.directAllocation
+# Parameters: (MAX_LIVE_BUFFERS = 65536, allocatorType = ADAPTIVE, enableReadWrite = true, sizePattern = E_COMMERCE)
+
+# Run progress: 42.86% complete, ETA 00:03:12
+# Fork: 1 of 1
+# Warmup Iteration   1: 11791.250 ±(99.9%) 2601.183 ns/op
+# Warmup Iteration   2: 1983.106 ±(99.9%) 331.834 ns/op
+# Warmup Iteration   3: 1123.119 ±(99.9%) 153.163 ns/op
+# Warmup Iteration   4: 1172.032 ±(99.9%) 181.332 ns/op
+# Warmup Iteration   5: 1116.753 ±(99.9%) 161.755 ns/op
+# Warmup Iteration   6: 1257.823 ±(99.9%) 289.591 ns/op
+# Warmup Iteration   7: 1126.446 ±(99.9%) 172.354 ns/op
+# Warmup Iteration   8: 1197.879 ±(99.9%) 243.689 ns/op
+# Warmup Iteration   9: 1109.049 ±(99.9%) 152.364 ns/op
+# Warmup Iteration  10: 1097.800 ±(99.9%) 140.445 ns/op
+Iteration   1: 1214.865 ±(99.9%) 290.874 ns/op
+Iteration   2: 1365.850 ±(99.9%) 430.511 ns/op
+Iteration   3: 1136.149 ±(99.9%) 217.251 ns/op
+Iteration   4: 1107.702 ±(99.9%) 162.683 ns/op
+Iteration   5: 1110.142 ±(99.9%) 173.266 ns/op
+Iteration   6: 1129.893 ±(99.9%) 188.697 ns/op
+Iteration   7: 1177.808 ±(99.9%) 244.274 ns/op
+Iteration   8: 1140.398 ±(99.9%) 213.392 ns/op
+Iteration   9: 1198.996 ±(99.9%) 290.330 ns/op
+Iteration  10: cRSS-pRSS:[16392, 16392]
+;used-memory:[10358]
+1107.631 ±(99.9%) 165.533 ns/op
+
+
+Result "io.github.neoionet.netty.microbenchmark.ByteBufAllocatorAllocPatternBenchmark.directAllocation":
+  1168.943 ±(99.9%) 119.518 ns/op [Average]
+  (min, avg, max) = (1107.631, 1168.943, 1365.850), stdev = 79.054
+  CI (99.9%): [1049.426, 1288.461] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21, Java HotSpot(TM) 64-Bit Server VM, 21+35-LTS-2513
+# VM invoker: /home/forked_franz/.sdkman/candidates/java/21-oracle/bin/java
+# VM options: -server -dsa -da -XX:InitialRAMPercentage=40.0 -XX:MaxRAMPercentage=40.0 -Dio.netty.leakDetection.level=disabled -Djmh.executor=CUSTOM -Djmh.executor.class=io.github.neoionet.netty.microbenchmark.executor.FastThreadLocalThreadHarnessExecutor -XX:MaxRAM=60g
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 10 iterations, 1 s each
+# Measurement: 10 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 32 threads, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: io.github.neoionet.netty.microbenchmark.ByteBufAllocatorAllocPatternBenchmark.heapAllocation
+# Parameters: (MAX_LIVE_BUFFERS = 128, allocatorType = ADAPTIVE, enableReadWrite = true, sizePattern = E_COMMERCE)
+
+# Run progress: 50.00% complete, ETA 00:02:50
+# Fork: 1 of 1
+# Warmup Iteration   1: 383.930 ±(99.9%) 44.959 ns/op
+# Warmup Iteration   2: 275.522 ±(99.9%) 44.876 ns/op
+# Warmup Iteration   3: 263.254 ±(99.9%) 34.283 ns/op
+# Warmup Iteration   4: 267.348 ±(99.9%) 50.129 ns/op
+# Warmup Iteration   5: 260.155 ±(99.9%) 23.162 ns/op
+# Warmup Iteration   6: 272.224 ±(99.9%) 50.562 ns/op
+# Warmup Iteration   7: 286.391 ±(99.9%) 65.419 ns/op
+# Warmup Iteration   8: 255.304 ±(99.9%) 29.309 ns/op
+# Warmup Iteration   9: 274.837 ±(99.9%) 55.837 ns/op
+# Warmup Iteration  10: 270.685 ±(99.9%) 48.116 ns/op
+Iteration   1: 282.875 ±(99.9%) 66.615 ns/op
+Iteration   2: 273.740 ±(99.9%) 37.439 ns/op
+Iteration   3: 270.578 ±(99.9%) 30.543 ns/op
+Iteration   4: 302.034 ±(99.9%) 55.369 ns/op
+Iteration   5: 279.585 ±(99.9%) 41.694 ns/op
+Iteration   6: 283.563 ±(99.9%) 49.601 ns/op
+Iteration   7: 282.948 ±(99.9%) 44.121 ns/op
+Iteration   8: 283.397 ±(99.9%) 34.891 ns/op
+Iteration   9: 292.981 ±(99.9%) 57.551 ns/op
+Iteration  10: cRSS-pRSS:[2052, 2052]
+;used-memory:[188]
+280.612 ±(99.9%) 47.366 ns/op
+
+
+Result "io.github.neoionet.netty.microbenchmark.ByteBufAllocatorAllocPatternBenchmark.heapAllocation":
+  283.231 ±(99.9%) 13.516 ns/op [Average]
+  (min, avg, max) = (270.578, 283.231, 302.034), stdev = 8.940
+  CI (99.9%): [269.716, 296.747] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21, Java HotSpot(TM) 64-Bit Server VM, 21+35-LTS-2513
+# VM invoker: /home/forked_franz/.sdkman/candidates/java/21-oracle/bin/java
+# VM options: -server -dsa -da -XX:InitialRAMPercentage=40.0 -XX:MaxRAMPercentage=40.0 -Dio.netty.leakDetection.level=disabled -Djmh.executor=CUSTOM -Djmh.executor.class=io.github.neoionet.netty.microbenchmark.executor.FastThreadLocalThreadHarnessExecutor -XX:MaxRAM=60g
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 10 iterations, 1 s each
+# Measurement: 10 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 32 threads, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: io.github.neoionet.netty.microbenchmark.ByteBufAllocatorAllocPatternBenchmark.heapAllocation
+# Parameters: (MAX_LIVE_BUFFERS = 1024, allocatorType = ADAPTIVE, enableReadWrite = true, sizePattern = E_COMMERCE)
+
+# Run progress: 57.14% complete, ETA 00:02:25
+# Fork: 1 of 1
+# Warmup Iteration   1: 670.411 ±(99.9%) 89.106 ns/op
+# Warmup Iteration   2: 713.169 ±(99.9%) 125.278 ns/op
+# Warmup Iteration   3: 378.955 ±(99.9%) 107.629 ns/op
+# Warmup Iteration   4: 386.145 ±(99.9%) 67.455 ns/op
+# Warmup Iteration   5: 387.209 ±(99.9%) 70.686 ns/op
+# Warmup Iteration   6: 431.821 ±(99.9%) 121.517 ns/op
+# Warmup Iteration   7: 378.101 ±(99.9%) 57.356 ns/op
+# Warmup Iteration   8: 399.429 ±(99.9%) 78.855 ns/op
+# Warmup Iteration   9: 410.468 ±(99.9%) 93.443 ns/op
+# Warmup Iteration  10: 395.909 ±(99.9%) 90.212 ns/op
+Iteration   1: 403.139 ±(99.9%) 116.495 ns/op
+Iteration   2: 381.840 ±(99.9%) 80.281 ns/op
+Iteration   3: 388.668 ±(99.9%) 78.445 ns/op
+Iteration   4: 393.343 ±(99.9%) 109.635 ns/op
+Iteration   5: 387.185 ±(99.9%) 65.907 ns/op
+Iteration   6: 396.624 ±(99.9%) 113.174 ns/op
+Iteration   7: 438.648 ±(99.9%) 78.792 ns/op
+Iteration   8: 407.861 ±(99.9%) 92.886 ns/op
+Iteration   9: 493.193 ±(99.9%) 83.207 ns/op
+Iteration  10: cRSS-pRSS:[2370, 2370]
+;used-memory:[414]
+429.512 ±(99.9%) 108.555 ns/op
+
+
+Result "io.github.neoionet.netty.microbenchmark.ByteBufAllocatorAllocPatternBenchmark.heapAllocation":
+  412.001 ±(99.9%) 51.292 ns/op [Average]
+  (min, avg, max) = (381.840, 412.001, 493.193), stdev = 33.927
+  CI (99.9%): [360.709, 463.293] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21, Java HotSpot(TM) 64-Bit Server VM, 21+35-LTS-2513
+# VM invoker: /home/forked_franz/.sdkman/candidates/java/21-oracle/bin/java
+# VM options: -server -dsa -da -XX:InitialRAMPercentage=40.0 -XX:MaxRAMPercentage=40.0 -Dio.netty.leakDetection.level=disabled -Djmh.executor=CUSTOM -Djmh.executor.class=io.github.neoionet.netty.microbenchmark.executor.FastThreadLocalThreadHarnessExecutor -XX:MaxRAM=60g
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 10 iterations, 1 s each
+# Measurement: 10 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 32 threads, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: io.github.neoionet.netty.microbenchmark.ByteBufAllocatorAllocPatternBenchmark.heapAllocation
+# Parameters: (MAX_LIVE_BUFFERS = 4096, allocatorType = ADAPTIVE, enableReadWrite = true, sizePattern = E_COMMERCE)
+
+# Run progress: 64.29% complete, ETA 00:02:00
+# Fork: 1 of 1
+# Warmup Iteration   1: 912.742 ±(99.9%) 72.025 ns/op
+# Warmup Iteration   2: 573.871 ±(99.9%) 74.926 ns/op
+# Warmup Iteration   3: 499.461 ±(99.9%) 104.883 ns/op
+# Warmup Iteration   4: 504.348 ±(99.9%) 137.664 ns/op
+# Warmup Iteration   5: 455.975 ±(99.9%) 79.822 ns/op
+# Warmup Iteration   6: 440.845 ±(99.9%) 72.234 ns/op
+# Warmup Iteration   7: 456.541 ±(99.9%) 100.693 ns/op
+# Warmup Iteration   8: 463.134 ±(99.9%) 86.539 ns/op
+# Warmup Iteration   9: 468.896 ±(99.9%) 101.712 ns/op
+# Warmup Iteration  10: 449.774 ±(99.9%) 82.557 ns/op
+Iteration   1: 456.420 ±(99.9%) 75.416 ns/op
+Iteration   2: 461.178 ±(99.9%) 88.557 ns/op
+Iteration   3: 457.881 ±(99.9%) 86.782 ns/op
+Iteration   4: 459.659 ±(99.9%) 87.270 ns/op
+Iteration   5: 452.336 ±(99.9%) 81.286 ns/op
+Iteration   6: 454.537 ±(99.9%) 84.162 ns/op
+Iteration   7: 461.039 ±(99.9%) 91.624 ns/op
+Iteration   8: 449.245 ±(99.9%) 65.697 ns/op
+Iteration   9: 490.289 ±(99.9%) 121.142 ns/op
+Iteration  10: cRSS-pRSS:[2978, 2980]
+;used-memory:[1124]
+490.078 ±(99.9%) 115.343 ns/op
+
+
+Result "io.github.neoionet.netty.microbenchmark.ByteBufAllocatorAllocPatternBenchmark.heapAllocation":
+  463.266 ±(99.9%) 22.194 ns/op [Average]
+  (min, avg, max) = (449.245, 463.266, 490.289), stdev = 14.680
+  CI (99.9%): [441.072, 485.461] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21, Java HotSpot(TM) 64-Bit Server VM, 21+35-LTS-2513
+# VM invoker: /home/forked_franz/.sdkman/candidates/java/21-oracle/bin/java
+# VM options: -server -dsa -da -XX:InitialRAMPercentage=40.0 -XX:MaxRAMPercentage=40.0 -Dio.netty.leakDetection.level=disabled -Djmh.executor=CUSTOM -Djmh.executor.class=io.github.neoionet.netty.microbenchmark.executor.FastThreadLocalThreadHarnessExecutor -XX:MaxRAM=60g
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 10 iterations, 1 s each
+# Measurement: 10 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 32 threads, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: io.github.neoionet.netty.microbenchmark.ByteBufAllocatorAllocPatternBenchmark.heapAllocation
+# Parameters: (MAX_LIVE_BUFFERS = 8192, allocatorType = ADAPTIVE, enableReadWrite = true, sizePattern = E_COMMERCE)
+
+# Run progress: 71.43% complete, ETA 00:01:36
+# Fork: 1 of 1
+# Warmup Iteration   1: 1643.223 ±(99.9%) 247.346 ns/op
+# Warmup Iteration   2: 628.663 ±(99.9%) 106.763 ns/op
+# Warmup Iteration   3: 663.260 ±(99.9%) 201.090 ns/op
+# Warmup Iteration   4: 771.569 ±(99.9%) 254.544 ns/op
+# Warmup Iteration   5: 659.599 ±(99.9%) 207.696 ns/op
+# Warmup Iteration   6: 638.862 ±(99.9%) 157.972 ns/op
+# Warmup Iteration   7: 634.859 ±(99.9%) 178.395 ns/op
+# Warmup Iteration   8: 607.679 ±(99.9%) 125.277 ns/op
+# Warmup Iteration   9: 735.227 ±(99.9%) 306.917 ns/op
+# Warmup Iteration  10: 612.038 ±(99.9%) 126.149 ns/op
+Iteration   1: 675.203 ±(99.9%) 186.634 ns/op
+Iteration   2: 743.809 ±(99.9%) 276.998 ns/op
+Iteration   3: 668.999 ±(99.9%) 200.729 ns/op
+Iteration   4: 709.455 ±(99.9%) 250.428 ns/op
+Iteration   5: 653.504 ±(99.9%) 188.774 ns/op
+Iteration   6: 694.053 ±(99.9%) 206.402 ns/op
+Iteration   7: 707.516 ±(99.9%) 206.433 ns/op
+Iteration   8: 681.792 ±(99.9%) 193.455 ns/op
+Iteration   9: 624.715 ±(99.9%) 134.321 ns/op
+Iteration  10: cRSS-pRSS:[3920, 3922]
+;used-memory:[1747]
+772.883 ±(99.9%) 331.057 ns/op
+
+
+Result "io.github.neoionet.netty.microbenchmark.ByteBufAllocatorAllocPatternBenchmark.heapAllocation":
+  693.193 ±(99.9%) 65.098 ns/op [Average]
+  (min, avg, max) = (624.715, 693.193, 772.883), stdev = 43.058
+  CI (99.9%): [628.095, 758.291] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21, Java HotSpot(TM) 64-Bit Server VM, 21+35-LTS-2513
+# VM invoker: /home/forked_franz/.sdkman/candidates/java/21-oracle/bin/java
+# VM options: -server -dsa -da -XX:InitialRAMPercentage=40.0 -XX:MaxRAMPercentage=40.0 -Dio.netty.leakDetection.level=disabled -Djmh.executor=CUSTOM -Djmh.executor.class=io.github.neoionet.netty.microbenchmark.executor.FastThreadLocalThreadHarnessExecutor -XX:MaxRAM=60g
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 10 iterations, 1 s each
+# Measurement: 10 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 32 threads, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: io.github.neoionet.netty.microbenchmark.ByteBufAllocatorAllocPatternBenchmark.heapAllocation
+# Parameters: (MAX_LIVE_BUFFERS = 16384, allocatorType = ADAPTIVE, enableReadWrite = true, sizePattern = E_COMMERCE)
+
+# Run progress: 78.57% complete, ETA 00:01:12
+# Fork: 1 of 1
+# Warmup Iteration   1: 4162.158 ±(99.9%) 521.789 ns/op
+# Warmup Iteration   2: 1029.232 ±(99.9%) 125.047 ns/op
+# Warmup Iteration   3: 1006.775 ±(99.9%) 175.296 ns/op
+# Warmup Iteration   4: 957.093 ±(99.9%) 241.034 ns/op
+# Warmup Iteration   5: 920.858 ±(99.9%) 109.217 ns/op
+# Warmup Iteration   6: 1015.710 ±(99.9%) 201.667 ns/op
+# Warmup Iteration   7: 965.693 ±(99.9%) 178.803 ns/op
+# Warmup Iteration   8: 963.431 ±(99.9%) 233.701 ns/op
+# Warmup Iteration   9: 1042.457 ±(99.9%) 284.306 ns/op
+# Warmup Iteration  10: 977.655 ±(99.9%) 216.451 ns/op
+Iteration   1: 960.966 ±(99.9%) 158.188 ns/op
+Iteration   2: 1082.314 ±(99.9%) 350.637 ns/op
+Iteration   3: 1038.019 ±(99.9%) 255.347 ns/op
+Iteration   4: 991.954 ±(99.9%) 263.586 ns/op
+Iteration   5: 1041.942 ±(99.9%) 285.019 ns/op
+Iteration   6: 977.060 ±(99.9%) 203.036 ns/op
+Iteration   7: 1013.153 ±(99.9%) 218.677 ns/op
+Iteration   8: 998.661 ±(99.9%) 211.286 ns/op
+Iteration   9: 1209.014 ±(99.9%) 388.383 ns/op
+Iteration  10: cRSS-pRSS:[6392, 6396]
+;used-memory:[3003]
+1110.027 ±(99.9%) 321.372 ns/op
+
+
+Result "io.github.neoionet.netty.microbenchmark.ByteBufAllocatorAllocPatternBenchmark.heapAllocation":
+  1042.311 ±(99.9%) 112.868 ns/op [Average]
+  (min, avg, max) = (960.966, 1042.311, 1209.014), stdev = 74.655
+  CI (99.9%): [929.443, 1155.179] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21, Java HotSpot(TM) 64-Bit Server VM, 21+35-LTS-2513
+# VM invoker: /home/forked_franz/.sdkman/candidates/java/21-oracle/bin/java
+# VM options: -server -dsa -da -XX:InitialRAMPercentage=40.0 -XX:MaxRAMPercentage=40.0 -Dio.netty.leakDetection.level=disabled -Djmh.executor=CUSTOM -Djmh.executor.class=io.github.neoionet.netty.microbenchmark.executor.FastThreadLocalThreadHarnessExecutor -XX:MaxRAM=60g
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 10 iterations, 1 s each
+# Measurement: 10 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 32 threads, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: io.github.neoionet.netty.microbenchmark.ByteBufAllocatorAllocPatternBenchmark.heapAllocation
+# Parameters: (MAX_LIVE_BUFFERS = 32768, allocatorType = ADAPTIVE, enableReadWrite = true, sizePattern = E_COMMERCE)
+
+# Run progress: 85.71% complete, ETA 00:00:48
+# Fork: 1 of 1
+# Warmup Iteration   1: 16677.247 ±(99.9%) 1400.171 ns/op
+# Warmup Iteration   2: 1346.584 ±(99.9%) 202.007 ns/op
+# Warmup Iteration   3: 1042.173 ±(99.9%) 172.738 ns/op
+# Warmup Iteration   4: 1149.651 ±(99.9%) 248.934 ns/op
+# Warmup Iteration   5: 1029.241 ±(99.9%) 120.961 ns/op
+# Warmup Iteration   6: 1148.250 ±(99.9%) 259.612 ns/op
+# Warmup Iteration   7: 1079.638 ±(99.9%) 220.446 ns/op
+# Warmup Iteration   8: 1127.289 ±(99.9%) 250.157 ns/op
+# Warmup Iteration   9: 1098.517 ±(99.9%) 212.430 ns/op
+# Warmup Iteration  10: 1020.676 ±(99.9%) 120.311 ns/op
+Iteration   1: 999.893 ±(99.9%) 85.830 ns/op
+Iteration   2: 1122.364 ±(99.9%) 255.699 ns/op
+Iteration   3: 1065.413 ±(99.9%) 200.694 ns/op
+Iteration   4: 1103.642 ±(99.9%) 226.880 ns/op
+Iteration   5: 1129.283 ±(99.9%) 255.472 ns/op
+Iteration   6: 1113.912 ±(99.9%) 212.171 ns/op
+Iteration   7: 1119.667 ±(99.9%) 246.380 ns/op
+Iteration   8: 1098.124 ±(99.9%) 214.901 ns/op
+Iteration   9: 1248.703 ±(99.9%) 267.066 ns/op
+Iteration  10: cRSS-pRSS:[12066, 12066]
+;used-memory:[5279]
+1158.470 ±(99.9%) 220.689 ns/op
+
+
+Result "io.github.neoionet.netty.microbenchmark.ByteBufAllocatorAllocPatternBenchmark.heapAllocation":
+  1115.947 ±(99.9%) 95.831 ns/op [Average]
+  (min, avg, max) = (999.893, 1115.947, 1248.703), stdev = 63.386
+  CI (99.9%): [1020.116, 1211.778] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21, Java HotSpot(TM) 64-Bit Server VM, 21+35-LTS-2513
+# VM invoker: /home/forked_franz/.sdkman/candidates/java/21-oracle/bin/java
+# VM options: -server -dsa -da -XX:InitialRAMPercentage=40.0 -XX:MaxRAMPercentage=40.0 -Dio.netty.leakDetection.level=disabled -Djmh.executor=CUSTOM -Djmh.executor.class=io.github.neoionet.netty.microbenchmark.executor.FastThreadLocalThreadHarnessExecutor -XX:MaxRAM=60g
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 10 iterations, 1 s each
+# Measurement: 10 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 32 threads, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: io.github.neoionet.netty.microbenchmark.ByteBufAllocatorAllocPatternBenchmark.heapAllocation
+# Parameters: (MAX_LIVE_BUFFERS = 65536, allocatorType = ADAPTIVE, enableReadWrite = true, sizePattern = E_COMMERCE)
+
+# Run progress: 92.86% complete, ETA 00:00:24
+# Fork: 1 of 1
+# Warmup Iteration   1: 26431.077 ±(99.9%) 5397.979 ns/op
+# Warmup Iteration   2: 4987.466 ±(99.9%) 737.892 ns/op
+# Warmup Iteration   3: 1629.389 ±(99.9%) 216.408 ns/op
+# Warmup Iteration   4: 1222.491 ±(99.9%) 294.178 ns/op
+# Warmup Iteration   5: 1158.014 ±(99.9%) 153.666 ns/op
+# Warmup Iteration   6: 1321.693 ±(99.9%) 290.215 ns/op
+# Warmup Iteration   7: 1217.103 ±(99.9%) 336.812 ns/op
+# Warmup Iteration   8: 1191.408 ±(99.9%) 204.049 ns/op
+# Warmup Iteration   9: 1221.964 ±(99.9%) 204.062 ns/op
+# Warmup Iteration  10: 1205.461 ±(99.9%) 247.957 ns/op
+Iteration   1: 1267.176 ±(99.9%) 178.682 ns/op
+Iteration   2: 1274.136 ±(99.9%) 289.865 ns/op
+Iteration   3: 1163.185 ±(99.9%) 189.934 ns/op
+Iteration   4: 1197.724 ±(99.9%) 201.730 ns/op
+Iteration   5: 1177.699 ±(99.9%) 223.326 ns/op
+Iteration   6: 1310.752 ±(99.9%) 263.973 ns/op
+Iteration   7: 1328.172 ±(99.9%) 316.108 ns/op
+Iteration   8: 1228.747 ±(99.9%) 259.001 ns/op
+Iteration   9: 1218.269 ±(99.9%) 255.734 ns/op
+Iteration  10: cRSS-pRSS:[19496, 19496]
+;used-memory:[10364]
+1234.299 ±(99.9%) 280.855 ns/op
+
+
+Result "io.github.neoionet.netty.microbenchmark.ByteBufAllocatorAllocPatternBenchmark.heapAllocation":
+  1240.016 ±(99.9%) 82.631 ns/op [Average]
+  (min, avg, max) = (1163.185, 1240.016, 1328.172), stdev = 54.655
+  CI (99.9%): [1157.385, 1322.647] (assumes normal distribution)
+
+
+# Run complete. Total time: 00:05:41
+
+REMEMBER: The numbers below are just data. To gain reusable insights, you need to follow up on
+why the numbers are the way they are. Use profilers (see -prof, -lprof), design factorial
+experiments, perform baseline and negative tests that provide experimental control, make sure
+the benchmarking environment is safe on JVM/OS/HW level, ask for reviews from the domain experts.
+Do not assume the numbers tell you what you want them to tell.
+
+NOTE: Current JVM experimentally supports Compiler Blackholes, and they are in use. Please exercise
+extra caution when trusting the results, look into the generated code to check the benchmark still
+works, and factor in a small probability of new VM bugs. Additionally, while comparisons between
+different JVMs are already problematic, the performance difference caused by different Blackhole
+modes can be very significant. Please make sure you use the consistent Blackhole mode for comparisons.
+
+Benchmark                                               (MAX_LIVE_BUFFERS)  (allocatorType)  (enableReadWrite)  (sizePattern)  Mode  Cnt     Score     Error  Units
+ByteBufAllocatorAllocPatternBenchmark.directAllocation                 128         ADAPTIVE               true     E_COMMERCE  avgt   10   297.808 ±  21.877  ns/op
+ByteBufAllocatorAllocPatternBenchmark.directAllocation                1024         ADAPTIVE               true     E_COMMERCE  avgt   10   355.772 ±  28.818  ns/op
+ByteBufAllocatorAllocPatternBenchmark.directAllocation                4096         ADAPTIVE               true     E_COMMERCE  avgt   10   396.838 ±  29.830  ns/op
+ByteBufAllocatorAllocPatternBenchmark.directAllocation                8192         ADAPTIVE               true     E_COMMERCE  avgt   10   631.493 ±  48.237  ns/op
+ByteBufAllocatorAllocPatternBenchmark.directAllocation               16384         ADAPTIVE               true     E_COMMERCE  avgt   10   851.451 ±  47.703  ns/op
+ByteBufAllocatorAllocPatternBenchmark.directAllocation               32768         ADAPTIVE               true     E_COMMERCE  avgt   10  1035.473 ±  47.629  ns/op
+ByteBufAllocatorAllocPatternBenchmark.directAllocation               65536         ADAPTIVE               true     E_COMMERCE  avgt   10  1168.943 ± 119.518  ns/op
+ByteBufAllocatorAllocPatternBenchmark.heapAllocation                   128         ADAPTIVE               true     E_COMMERCE  avgt   10   283.231 ±  13.516  ns/op
+ByteBufAllocatorAllocPatternBenchmark.heapAllocation                  1024         ADAPTIVE               true     E_COMMERCE  avgt   10   412.001 ±  51.292  ns/op
+ByteBufAllocatorAllocPatternBenchmark.heapAllocation                  4096         ADAPTIVE               true     E_COMMERCE  avgt   10   463.266 ±  22.194  ns/op
+ByteBufAllocatorAllocPatternBenchmark.heapAllocation                  8192         ADAPTIVE               true     E_COMMERCE  avgt   10   693.193 ±  65.098  ns/op
+ByteBufAllocatorAllocPatternBenchmark.heapAllocation                 16384         ADAPTIVE               true     E_COMMERCE  avgt   10  1042.311 ± 112.868  ns/op
+ByteBufAllocatorAllocPatternBenchmark.heapAllocation                 32768         ADAPTIVE               true     E_COMMERCE  avgt   10  1115.947 ±  95.831  ns/op
+ByteBufAllocatorAllocPatternBenchmark.heapAllocation                 65536         ADAPTIVE               true     E_COMMERCE  avgt   10  1240.016 ±  82.631  ns/op
+
+Benchmark result is saved to /home/forked_franz/IdeaProjects/netty-bench/results/h2h-1.2.0-x86-2026-09-17/ecommerce/JMH-eventloop-perstripe.json
