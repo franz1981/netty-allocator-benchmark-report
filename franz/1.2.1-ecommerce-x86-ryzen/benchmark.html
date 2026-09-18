@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Netty Allocators Benchmark</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  display: flex;
+  height: 100vh;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #e2e8f0;
+}
+
+nav {
+  width: 200px;
+  flex-shrink: 0;
+  border-right: 1px solid #252830;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 12px;
+  gap: 4px;
+}
+
+.logo {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #16191f;
+  padding: 0 4px 16px;
+  border-bottom: 1px solid #252830;
+  margin-bottom: 8px;
+}
+
+.logo span {
+  display: block;
+  font-size: 12px;
+  font-weight: 450;
+  letter-spacing: 0.05em;
+  color: #475569;
+  margin-top: 16px;
+}
+
+.nav-btn {
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  padding: 9px 12px;
+  text-align: left;
+  font-size: 16px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  line-height: 1.4;
+}
+
+.nav-btn:hover {
+  background: #1e2230;
+  color: #cbd5e1;
+}
+
+.nav-btn.active {
+  background: #1e2a40;
+  color: #ffffff;
+}
+
+.nav-btn::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  margin-right: 8px;
+  opacity: 0.6;
+  vertical-align: middle;
+  position: relative;
+  top: -1px;
+}
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: #ffffff;
+}
+
+iframe {
+  width: 100%;
+  flex: 1;
+  border: none;
+}
+
+#loading {
+  position: fixed;
+  inset: 0;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(3px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  gap: 14px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.spinner {
+  width: 42px;
+  height: 42px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin .75s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div id="loading">
+  <div class="spinner"></div>
+  <span>loading…</span>
+</div>
+<nav>
+  <div class="logo">Allocator Bench<span>E_COMMERCE · 32 threads · 16 vCPUs · AMD Ryzen 9 7950X</span></div>
+
+  <button class="nav-btn active" onclick="show(this,0)">Eventloop on x86</button>
+  <button class="nav-btn" onclick="show(this,1)">Platform on x86</button>
+</nav>
+
+<main>
+  <iframe id="f0" data-srcdoc='<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;padding:0 12px;font-family:system-ui,sans-serif}</style></head><body>
+<style>
+.ctrl-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1rem;align-items:flex-end}
+
+.pg{display:flex;border:0.5px solid var(--color-border-secondary, #d1d5db);border-radius:20px;overflow:hidden}
+.pill{padding:5px 14px;font-size:13px;cursor:pointer;background:transparent;border:none;color:var(--color-text-secondary, #4b5563)}
+
+.pill.on{background:var(--color-text-primary, #111827);color:var(--color-background-primary, #ffffff)}
+.slabel{font-size:11px;font-weight:500;color:var(--color-text-tertiary, #6b7280);text-transform:uppercase;margin-bottom:5px}
+.chart-title{font-size:13px;font-weight:500;color:var(--color-text-secondary, #4b5563);margin:1rem 0 4px}
+.cw{position:relative;width:100%;height:260px}
+.leg{display:flex;gap:16px;font-size:12px;color:var(--color-text-secondary, #4b5563);margin-bottom:.5rem}
+.leg span{display:flex;align-items:center;gap:5px}
+.lsq{display:inline-block;width:20px;height:3px;border-radius:2px}
+.warn{background:var(--color-background-warning, #fef08a);border:0.5px solid var(--color-border-warning, #facc15);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--color-text-warning, #854d0e);margin-bottom:1rem;display:none}
+</style>
+
+<div style="padding:18px 0 0">
+<h4 class="sr-only">32 event loop threads on x86 (AMD Ryzen 9 7950X) with 16 vCPUs</h4>
+<hr>
+<div class="ctrl-row">
+  <div><div class="slabel">allocation</div>
+    <div class="pg" id="gm">
+      <button class="pill on" data-v="direct">direct</button>
+      <button class="pill" data-v="heap">heap</button>
+    </div></div>
+  <div><div class="slabel">pattern</div>
+    <div class="pg" id="gp">
+      <button class="pill on" data-v="E_COMMERCE">E_COMMERCE</button>
+    </div></div>
+  <div><div class="slabel">read/write</div>
+    <div class="pg" id="gr">
+      <button class="pill on" data-v="true">on</button>
+    </div></div>
+</div>
+
+<div class="leg">
+  <span><span class="lsq" style="background:#4a7fcb"></span>ADAPTIVE #17151</span>
+  <span><span class="lsq" style="background:#2aaa6e"></span>ADAPTIVE + size classes</span>
+  <span><span class="lsq" style="background:#d05a2a"></span>MIMALLOC 1.2.1</span>
+</div>
+
+<div class="chart-title">Latency (ns/op)&nbsp;&nbsp;<span style="font-weight:400;color:var(--color-text-tertiary)">the lower the better</span></div>
+<div class="cw"><canvas id="cL" role="img" aria-label="Allocation latency line chart"></canvas></div>
+
+<div class="chart-title">RSS (MiB)</div>
+<div class="cw"><canvas id="cR" role="img" aria-label="RSS memory line chart"></canvas></div>
+
+<div class="chart-title">allocator used memory (MiB)&nbsp;&nbsp;<span style="font-weight:400;color:var(--color-text-tertiary)">allocator.usedDirectMemory() or allocator.usedHeapMemory()</span></div>
+<div class="cw"><canvas id="cNew" role="img" aria-label="UsedMemory chart"></canvas></div>
+
+</div>
+
+<script>
+const D=[["direct",128,"ADAPTIVE #17151","true","E_COMMERCE",301,2006,160],["direct",128,"MIMALLOC 1.2.1","true","E_COMMERCE",223,1959,384],["direct",1024,"ADAPTIVE #17151","true","E_COMMERCE",374,2386,313],["direct",1024,"MIMALLOC 1.2.1","true","E_COMMERCE",259,2089,512],["direct",4096,"ADAPTIVE #17151","true","E_COMMERCE",4258,2863,750],["direct",4096,"MIMALLOC 1.2.1","true","E_COMMERCE",298,2620,1024],["direct",8192,"ADAPTIVE #17151","true","E_COMMERCE",5798,3453,1389],["direct",8192,"MIMALLOC 1.2.1","true","E_COMMERCE",353,3273,1664],["direct",16384,"ADAPTIVE #17151","true","E_COMMERCE",8242,4820,2656],["direct",16384,"MIMALLOC 1.2.1","true","E_COMMERCE",534,4569,2944],["direct",32768,"ADAPTIVE #17151","true","E_COMMERCE",7179,7474,5244],["direct",32768,"MIMALLOC 1.2.1","true","E_COMMERCE",615,7176,5452],["direct",65536,"ADAPTIVE #17151","true","E_COMMERCE",75754,26438,10419],["direct",65536,"MIMALLOC 1.2.1","true","E_COMMERCE",694,12044,10268],["heap",128,"ADAPTIVE #17151","true","E_COMMERCE",298,2020,135],["heap",128,"MIMALLOC 1.2.1","true","E_COMMERCE",256,2035,384],["heap",1024,"ADAPTIVE #17151","true","E_COMMERCE",494,2122,307],["heap",1024,"MIMALLOC 1.2.1","true","E_COMMERCE",272,2047,512],["heap",4096,"ADAPTIVE #17151","true","E_COMMERCE",5187,16334,740],["heap",4096,"MIMALLOC 1.2.1","true","E_COMMERCE",490,2806,1024],["heap",8192,"ADAPTIVE #17151","true","E_COMMERCE",8493,17125,1374],["heap",8192,"MIMALLOC 1.2.1","true","E_COMMERCE",528,2836,1664],["heap",16384,"ADAPTIVE #17151","true","E_COMMERCE",9115,12048,2684],["heap",16384,"MIMALLOC 1.2.1","true","E_COMMERCE",726,4438,2944],["heap",32768,"ADAPTIVE #17151","true","E_COMMERCE",8829,13327,5217],["heap",32768,"MIMALLOC 1.2.1","true","E_COMMERCE",860,6838,5488],["heap",65536,"ADAPTIVE #17151","true","E_COMMERCE",37407,17529,10452],["heap",65536,"MIMALLOC 1.2.1","true","E_COMMERCE",974,12094,10240],["direct",128,"ADAPTIVE + size classes","true","E_COMMERCE",224,1989,418],["direct",1024,"ADAPTIVE + size classes","true","E_COMMERCE",247,2138,570],["direct",4096,"ADAPTIVE + size classes","true","E_COMMERCE",283,2853,973],["direct",8192,"ADAPTIVE + size classes","true","E_COMMERCE",397,3587,1624],["direct",16384,"ADAPTIVE + size classes","true","E_COMMERCE",491,4968,2845],["direct",32768,"ADAPTIVE + size classes","true","E_COMMERCE",478,7679,5248],["direct",65536,"ADAPTIVE + size classes","true","E_COMMERCE",867,12892,10137],["heap",128,"ADAPTIVE + size classes","true","E_COMMERCE",242,2121,418],["heap",1024,"ADAPTIVE + size classes","true","E_COMMERCE",372,2149,522],["heap",4096,"ADAPTIVE + size classes","true","E_COMMERCE",366,3063,1010],["heap",8192,"ADAPTIVE + size classes","true","E_COMMERCE",781,4532,1579],["heap",16384,"ADAPTIVE + size classes","true","E_COMMERCE",789,10368,2839],["heap",32768,"ADAPTIVE + size classes","true","E_COMMERCE",923,14729,5271],["heap",65536,"ADAPTIVE + size classes","true","E_COMMERCE",772,22852,10125]];
+
+
+const BUFS=[128,1024,4096,8192,16384,32768,65536];
+const AL=["ADAPTIVE #17151", "ADAPTIVE + size classes", "MIMALLOC 1.2.1"];
+const CLR={"ADAPTIVE #17151": "#4a7fcb", "ADAPTIVE + size classes": "#2aaa6e", "MIMALLOC 1.2.1": "#d05a2a"};
+let st={method:"direct",pattern:"E_COMMERCE",rw:"true"};
+let cL,cR,cNew;
+
+function rows(){return D.filter(r=>r[0]===st.method&&r[3]===st.rw&&r[4]===st.pattern);}
+function ds(col){
+  return AL.map(a=>{
+    const sub=rows().filter(r=>r[2]===a);
+    return{label:a,data:BUFS.map(b=>{const r=sub.find(x=>x[1]===b);return r?r[col]:null;}),
+      borderColor:CLR[a],backgroundColor:CLR[a]+"22",borderWidth:2,
+    };
+  });
+}
+function opts(ytitle){
+  return{responsive:true,maintainAspectRatio:false,animation:{duration:300},
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y!=null?Math.round(c.parsed.y):"n/a"}`}}},
+    scales:{x:{grid:{color:"rgba(128,128,128,.12)"},ticks:{font:{size:11}},title:{display:true,text:"Live buffers",font:{size:11}}},
+            y:{grid:{color:"rgba(128,128,128,.12)"},ticks:{font:{size:11}},title:{display:true,text:ytitle,font:{size:11}}}}};
+}
+function draw(){
+  const lData={labels:BUFS.map(String),datasets:ds(5)};
+  const rData={labels:BUFS.map(String),datasets:ds(6)};
+  const nData={labels:BUFS.map(String),datasets:ds(7)};
+  if(cL){cL.data=lData;cL.update();}
+  if(cR){cR.data=rData;cR.update();}
+  if(cNew){cNew.data=nData;cNew.update();} 
+}
+
+document.querySelectorAll(".pg").forEach(g=>{
+  g.addEventListener("click",e=>{
+    const b=e.target.closest(".pill");if(!b)return;
+    g.querySelectorAll(".pill").forEach(p=>p.classList.remove("on"));
+    b.classList.add("on");
+    const id=g.id;
+    if(id==="gm")st.method=b.dataset.v;
+    if(id==="gp")st.pattern=b.dataset.v;
+    if(id==="gr")st.rw=b.dataset.v;
+    draw();
+  });
+});
+
+function loadChartJS(cb){
+  const CDNS=[
+    "https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"
+  ];
+  let done=false;
+  CDNS.forEach(url=>{
+    const s=document.createElement("script");
+    s.src=url;
+    s.onload=()=>{ if(!done){ done=true; cb(); } };
+    document.head.appendChild(s);
+  });
+}
+
+loadChartJS(function(){
+  cL=new Chart(document.getElementById("cL"),{type:"line",data:{labels:BUFS.map(String),datasets:ds(5)},options:opts("ns/op")});
+  cR=new Chart(document.getElementById("cR"),{type:"line",data:{labels:BUFS.map(String),datasets:ds(6)},options:opts("MiB")});
+  cNew = new Chart(document.getElementById("cNew"), {
+      type: "line",
+      data: { labels: BUFS.map(String), datasets: ds(7) },
+      options: opts("MiB")
+    });
+
+  if (window.parent) parent.postMessage("charts-ready", "*");
+});
+</script>
+</body></html>' style="display:none" frameborder="0"></iframe>
+  <iframe id="f1" data-srcdoc='<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;padding:0 12px;font-family:system-ui,sans-serif}</style></head><body>
+<style>
+.ctrl-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1rem;align-items:flex-end}
+
+.pg{display:flex;border:0.5px solid var(--color-border-secondary, #d1d5db);border-radius:20px;overflow:hidden}
+.pill{padding:5px 14px;font-size:13px;cursor:pointer;background:transparent;border:none;color:var(--color-text-secondary, #4b5563)}
+
+.pill.on{background:var(--color-text-primary, #111827);color:var(--color-background-primary, #ffffff)}
+.slabel{font-size:11px;font-weight:500;color:var(--color-text-tertiary, #6b7280);text-transform:uppercase;margin-bottom:5px}
+.chart-title{font-size:13px;font-weight:500;color:var(--color-text-secondary, #4b5563);margin:1rem 0 4px}
+.cw{position:relative;width:100%;height:260px}
+.leg{display:flex;gap:16px;font-size:12px;color:var(--color-text-secondary, #4b5563);margin-bottom:.5rem}
+.leg span{display:flex;align-items:center;gap:5px}
+.lsq{display:inline-block;width:20px;height:3px;border-radius:2px}
+.warn{background:var(--color-background-warning, #fef08a);border:0.5px solid var(--color-border-warning, #facc15);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--color-text-warning, #854d0e);margin-bottom:1rem;display:none}
+</style>
+
+<div style="padding:18px 0 0">
+<h4 class="sr-only">32 platform threads on x86 (AMD Ryzen 9 7950X) with 16 vCPUs</h4>
+<hr>
+<div class="ctrl-row">
+  <div><div class="slabel">allocation</div>
+    <div class="pg" id="gm">
+      <button class="pill on" data-v="direct">direct</button>
+      <button class="pill" data-v="heap">heap</button>
+    </div></div>
+  <div><div class="slabel">pattern</div>
+    <div class="pg" id="gp">
+        <button class="pill on" data-v="E_COMMERCE">E_COMMERCE</button>
+    </div></div>
+  <div><div class="slabel">read/write</div>
+    <div class="pg" id="gr">
+      <button class="pill on" data-v="true">on</button>
+    </div></div>
+</div>
+
+<div class="leg">
+  <span><span class="lsq" style="background:#4a7fcb"></span>ADAPTIVE #17151</span>
+  <span><span class="lsq" style="background:#2aaa6e"></span>ADAPTIVE + size classes</span>
+  <span><span class="lsq" style="background:#d05a2a"></span>MIMALLOC 1.2.1</span>
+</div>
+
+<div class="chart-title">Latency (ns/op)&nbsp;&nbsp;<span style="font-weight:400;color:var(--color-text-tertiary)">the lower the better</span></div>
+<div class="cw"><canvas id="cL" role="img" aria-label="Allocation latency line chart"></canvas></div>
+
+<div class="chart-title">RSS (MiB)</div>
+<div class="cw"><canvas id="cR" role="img" aria-label="RSS memory line chart"></canvas></div>
+
+<div class="chart-title">allocator used memory (MiB)&nbsp;&nbsp;<span style="font-weight:400;color:var(--color-text-tertiary)">allocator.usedDirectMemory() or allocator.usedHeapMemory()</span></div>
+<div class="cw"><canvas id="cNew" role="img" aria-label="UsedMemory chart"></canvas></div>
+
+</div>
+
+<script>
+const D=[["direct",128,"ADAPTIVE #17151","true","E_COMMERCE",373,2007,156],["direct",128,"MIMALLOC 1.2.1","true","E_COMMERCE",306,1959,384],["direct",1024,"ADAPTIVE #17151","true","E_COMMERCE",598,2416,364],["direct",1024,"MIMALLOC 1.2.1","true","E_COMMERCE",360,2088,512],["direct",4096,"ADAPTIVE #17151","true","E_COMMERCE",6062,2951,848],["direct",4096,"MIMALLOC 1.2.1","true","E_COMMERCE",384,2626,1024],["direct",8192,"ADAPTIVE #17151","true","E_COMMERCE",7348,3662,1353],["direct",8192,"MIMALLOC 1.2.1","true","E_COMMERCE",501,3271,1664],["direct",16384,"ADAPTIVE #17151","true","E_COMMERCE",9124,5121,2825],["direct",16384,"MIMALLOC 1.2.1","true","E_COMMERCE",611,4563,2944],["direct",32768,"ADAPTIVE #17151","true","E_COMMERCE",8724,7877,5377],["direct",32768,"MIMALLOC 1.2.1","true","E_COMMERCE",707,7065,5380],["direct",65536,"ADAPTIVE #17151","true","E_COMMERCE",36693,13135,10680],["direct",65536,"MIMALLOC 1.2.1","true","E_COMMERCE",724,12022,10248],["heap",128,"ADAPTIVE #17151","true","E_COMMERCE",358,2043,161],["heap",128,"MIMALLOC 1.2.1","true","E_COMMERCE",339,1994,384],["heap",1024,"ADAPTIVE #17151","true","E_COMMERCE",618,2363,361],["heap",1024,"MIMALLOC 1.2.1","true","E_COMMERCE",457,2028,512],["heap",4096,"ADAPTIVE #17151","true","E_COMMERCE",6896,16457,854],["heap",4096,"MIMALLOC 1.2.1","true","E_COMMERCE",582,2824,1024],["heap",8192,"ADAPTIVE #17151","true","E_COMMERCE",9578,11940,1448],["heap",8192,"MIMALLOC 1.2.1","true","E_COMMERCE",808,2837,1668],["heap",16384,"ADAPTIVE #17151","true","E_COMMERCE",10768,9127,2761],["heap",16384,"MIMALLOC 1.2.1","true","E_COMMERCE",924,4389,2952],["heap",32768,"ADAPTIVE #17151","true","E_COMMERCE",9688,12215,5318],["heap",32768,"MIMALLOC 1.2.1","true","E_COMMERCE",997,6825,5380],["heap",65536,"ADAPTIVE #17151","true","E_COMMERCE",44534,17063,10471],["heap",65536,"MIMALLOC 1.2.1","true","E_COMMERCE",1118,12081,10240],["direct",128,"ADAPTIVE + size classes","true","E_COMMERCE",370,1984,418],["direct",1024,"ADAPTIVE + size classes","true","E_COMMERCE",376,2148,571],["direct",4096,"ADAPTIVE + size classes","true","E_COMMERCE",476,2875,915],["direct",8192,"ADAPTIVE + size classes","true","E_COMMERCE",535,3622,1485],["direct",16384,"ADAPTIVE + size classes","true","E_COMMERCE",709,4966,2835],["direct",32768,"ADAPTIVE + size classes","true","E_COMMERCE",963,8368,5337],["direct",65536,"ADAPTIVE + size classes","true","E_COMMERCE",1031,13453,10174],["heap",128,"ADAPTIVE + size classes","true","E_COMMERCE",308,2137,418],["heap",1024,"ADAPTIVE + size classes","true","E_COMMERCE",522,2130,570],["heap",4096,"ADAPTIVE + size classes","true","E_COMMERCE",481,3073,915],["heap",8192,"ADAPTIVE + size classes","true","E_COMMERCE",768,4537,1505],["heap",16384,"ADAPTIVE + size classes","true","E_COMMERCE",849,9630,2848],["heap",32768,"ADAPTIVE + size classes","true","E_COMMERCE",1000,14844,5259],["heap",65536,"ADAPTIVE + size classes","true","E_COMMERCE",1168,19991,10122]];
+
+
+const BUFS=[128,1024,4096,8192,16384,32768,65536];
+const AL=["ADAPTIVE #17151", "ADAPTIVE + size classes", "MIMALLOC 1.2.1"];
+const CLR={"ADAPTIVE #17151": "#4a7fcb", "ADAPTIVE + size classes": "#2aaa6e", "MIMALLOC 1.2.1": "#d05a2a"};
+let st={method:"direct",pattern:"E_COMMERCE",rw:"true"};
+let cL,cR;
+
+function rows(){return D.filter(r=>r[0]===st.method&&r[3]===st.rw&&r[4]===st.pattern);}
+function ds(col){
+  return AL.map(a=>{
+    const sub=rows().filter(r=>r[2]===a);
+    return{label:a,data:BUFS.map(b=>{const r=sub.find(x=>x[1]===b);return r?r[col]:null;}),
+      borderColor:CLR[a],backgroundColor:CLR[a]+"22",borderWidth:2,
+    };
+  });
+}
+function opts(ytitle){
+  return{responsive:true,maintainAspectRatio:false,animation:{duration:300},
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y!=null?Math.round(c.parsed.y):"n/a"}`}}},
+    scales:{x:{grid:{color:"rgba(128,128,128,.12)"},ticks:{font:{size:11}},title:{display:true,text:"Live buffers",font:{size:11}}},
+            y:{grid:{color:"rgba(128,128,128,.12)"},ticks:{font:{size:11}},title:{display:true,text:ytitle,font:{size:11}}}}};
+}
+function draw(){
+  const lData={labels:BUFS.map(String),datasets:ds(5)};
+  const rData={labels:BUFS.map(String),datasets:ds(6)};
+  const nData={labels:BUFS.map(String),datasets:ds(7)};
+  if(cL){cL.data=lData;cL.update();}
+  if(cR){cR.data=rData;cR.update();}
+  if (cNew) { cNew.data = nData; cNew.update(); }
+}
+
+document.querySelectorAll(".pg").forEach(g=>{
+  g.addEventListener("click",e=>{
+    const b=e.target.closest(".pill");if(!b)return;
+    g.querySelectorAll(".pill").forEach(p=>p.classList.remove("on"));
+    b.classList.add("on");
+    const id=g.id;
+    if(id==="gm")st.method=b.dataset.v;
+    if(id==="gp")st.pattern=b.dataset.v;
+    if(id==="gr")st.rw=b.dataset.v;
+    draw();
+  });
+});
+
+function loadChartJS(cb){
+  const CDNS=[
+    "https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"
+  ];
+  let done=false;
+  CDNS.forEach(url=>{
+    const s=document.createElement("script");
+    s.src=url;
+    s.onload=()=>{ if(!done){ done=true; cb(); } };
+    document.head.appendChild(s);
+  });
+}
+loadChartJS(function(){
+  cL=new Chart(document.getElementById("cL"),{type:"line",data:{labels:BUFS.map(String),datasets:ds(5)},options:opts("ns/op")});
+  cR=new Chart(document.getElementById("cR"),{type:"line",data:{labels:BUFS.map(String),datasets:ds(6)},options:opts("MiB")});
+  cNew = new Chart(document.getElementById("cNew"), {
+      type: "line",
+      data: { labels: BUFS.map(String), datasets: ds(7) },
+      options: opts("MiB")
+    });
+
+  if (window.parent) parent.postMessage("charts-ready", "*");
+});
+</script>
+</body></html>' style="display:none" frameborder="0"></iframe>
+</main>
+
+<script>
+const btns = document.querySelectorAll(".nav-btn");
+const frames = document.querySelectorAll("iframe");
+
+function show(btn, i) {
+  btns.forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  frames.forEach((f, j) => {
+    if (j === i) {
+      if (!f.srcdoc) f.srcdoc = f.dataset.srcdoc;
+      f.style.display = "block";
+    } else {
+      f.style.display = "none";
+    }
+  });
+}
+
+window.addEventListener('message', e => {
+  if (e.data === 'charts-ready') {
+    const el = document.getElementById('loading');
+    el.style.opacity = '0';
+    el.style.transition = 'opacity .3s';
+    setTimeout(() => el.remove(), 300);
+  }
+});
+
+// click first button on laod.
+btns[0].click();
+</script>
+</body>
+</html>
